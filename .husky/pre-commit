@@ -1,0 +1,11 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo 'Formatting code'
+dotnet husky run --name dotnet-format-staged-files
+
+echo 'Building solution'
+dotnet build --no-restore
+
+echo 'Running unit tests'
+dotnet test --no-restore
