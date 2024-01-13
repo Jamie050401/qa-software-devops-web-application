@@ -1,4 +1,5 @@
 # mcr.microsoft.com/dotnet/runtime:8.0
+ARG ASPNETCORE_ENVIRONMENT=Production
 FROM debian:stable-slim AS base-env
 RUN \
    apt-get update && \
@@ -12,7 +13,7 @@ WORKDIR /app
 ENV \
     DOTNET_EnableDiagnostics=0 \
     DOTNET_GENERATE_ASPNET_CERTIFICATE=false \
-    ASPNETCORE_ENVIRONMENT=Development
+    ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
 EXPOSE 5000
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
