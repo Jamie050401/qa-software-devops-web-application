@@ -21,8 +21,8 @@ jobs:
         dotnet-version: 8.0.x
         cache: true
         cache-dependency-path: Application/packages.lock.json
-    #- name: Restore NuGet packages
-    #  run: dotnet restore --locked-mode
+    - name: Restore NuGet packages
+      run: dotnet restore --locked-mode
     - name: Build solution
       run: dotnet build
     - name: Run unit tests
@@ -32,8 +32,6 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
-    env:
-      CURRENT_DATE: $(date +%s)
     steps:
     - uses: actions/checkout@v4
       with:
@@ -53,11 +51,10 @@ jobs:
         build-args: ASPNETCORE_ENVIRONMENT=Production
         tags: |
           qa-web-application-2:latest
-          qa-web-application-2:$CURRENT_DATE
     - name: Build and push development Docker image
       uses: docker/build-push-action@v5
       with:
         file: Dockerfile
         push: true
         build-args: ASPNETCORE_ENVIRONMENT=Development
-        tags: qa-web-application-2:dev-$CURRENT_DATE
+        tags: qa-web-application-2:latest-dev
