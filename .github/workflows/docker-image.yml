@@ -20,8 +20,8 @@ jobs:
       with:
         dotnet-version: 8.0.x
         cache: true
-    - name: Restore NuGet packages
-      run: dotnet restore --locked-mode
+    #- name: Restore NuGet packages
+    #  run: dotnet restore --locked-mode
     - name: Build solution
       run: dotnet build
     - name: Run unit tests
@@ -29,6 +29,7 @@ jobs:
     # TODO - Finish implementing i.e. qodana static analysis
 
   build:
+    needs: test
     runs-on: ubuntu-latest
     env:
       CURRENT_DATE: $(date +%s)
@@ -48,17 +49,12 @@ jobs:
       with:
         file: Dockerfile
         push: true
-        build-args: |
-          ASPNETCORE_ENVIRONMENT=Production
-        tags: |
-          qa-web-application-2:latest
-          qa-web-application-2:$CURRENT_DATE
+        build-args: [ASPNETCORE_ENVIRONMENT=Production]
+        tags: [qa-web-application-2:latest, qa-web-application-2:$CURRENT_DATE]
     - name: Build and push development Docker image
       uses: docker/build-push-action@v5
       with:
         file: Dockerfile
         push: true
-        build-args: |
-          ASPNETCORE_ENVIRONMENT=Development
-        tags: |
-          qa-web-application-2:dev-$CURRENT_DATE
+        build-args: [ASPNETCORE_ENVIRONMENT=Development]
+        tags: [qa-web-application-2:dev-$CURRENT_DATE]
