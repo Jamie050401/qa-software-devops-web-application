@@ -49,12 +49,11 @@ jobs:
         file: Dockerfile
         push: true
         build-args: ASPNETCORE_ENVIRONMENT=Production
-        tags: |
-          qa-web-application-2:latest
+        tags: jamie050401/qa-web-application-2:latest
     - name: Build and push development Docker image
       uses: docker/build-push-action@v5
       with:
         file: Dockerfile
         push: true
         build-args: ASPNETCORE_ENVIRONMENT=Development
-        tags: qa-web-application-2:latest-dev
+        tags: jamie050401/qa-web-application-2:latest-dev
