@@ -1,3 +1,4 @@
+# mcr.microsoft.com/dotnet/runtime:8.0
 FROM debian:stable-slim AS base-env
 RUN \
    apt-get update && \
@@ -11,9 +12,8 @@ WORKDIR /app
 ENV \
     DOTNET_EnableDiagnostics=0 \
     DOTNET_GENERATE_ASPNET_CERTIFICATE=false \
-    ASPNETCORE_URLS=https://*:7224;http://*:5042 \
-    ASPNETCORE_ENVIRONMENT=Production
-EXPOSE 7224
+    ASPNETCORE_ENVIRONMENT=Development
+EXPOSE 5000
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 WORKDIR /src
@@ -28,4 +28,5 @@ RUN dotnet publish "/src/Application.csproj" -c Release -o /src/publish
 FROM base-env AS final-env
 WORKDIR /app
 COPY --from=publish-env /src/publish .
+
 ENTRYPOINT ["dotnet", "Application.dll"]
