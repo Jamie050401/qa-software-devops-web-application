@@ -20,6 +20,7 @@ jobs:
       with:
         dotnet-version: 8.0.x
         cache: true
+        cache-dependency-path: Application/packages.lock.json
     #- name: Restore NuGet packages
     #  run: dotnet restore --locked-mode
     - name: Build solution
