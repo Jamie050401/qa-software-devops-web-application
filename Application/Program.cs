@@ -10,19 +10,16 @@ builder.Services.AddRazorPages()
 
 var app = builder.Build();
 
-app.Urls.Clear();
 if (!app.Environment.IsDevelopment())
 {
-    app.Urls.Add("https://*:5000");
+
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
-else
-{
-    app.Urls.Add("http://*:5000");
-}
 
-app.UseHttpsRedirection();
+app.Urls.Clear();
+app.Urls.Add("http://*:5000");
+
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
