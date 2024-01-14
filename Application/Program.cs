@@ -17,9 +17,6 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.Urls.Clear();
-app.Urls.Add("http://*:5000");
-
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
