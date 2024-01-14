@@ -1,0 +1,9 @@
+version: "3"
+
+services:
+  qa-web-application-2:
+    image: jamie050401/qa-web-application-2:latest
+    container_name: qa-web-application-2
+    restart: always
+    ports:
+      - 5000:5000/tcp
