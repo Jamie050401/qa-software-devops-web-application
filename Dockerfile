@@ -12,8 +12,8 @@ ENV \
     DOTNET_EnableDiagnostics=0 \
     DOTNET_GENERATE_ASPNET_CERTIFICATE=false \
     ASPNETCORE_ENVIRONMENT=Production \
-    ASPNETCORE_URLS=http://+:5000
-EXPOSE 5000/tcp
+    ASPNETCORE_URLS=http://*:5000
+EXPOSE 5000
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 WORKDIR /src
