@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  test:
+  Test:
     runs-on: ubuntu-latest
     env:
       NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
@@ -27,13 +27,26 @@ jobs:
       run: dotnet build
     - name: Run unit tests
       run: dotnet test
-    - name: Run Qodana
-      uses: JetBrains/qodana-action@v2023.3
-      env:
-        QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
 
-  build:
-    needs: test
+  Qodana:
+    needs: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: "main"
+          fetch-depth: 0
+      - name: Run Qodana
+        uses: JetBrains/qodana-action@v2023.3
+        with:
+          pr-mode: false
+          args: --apply-fixes
+          push-fixes: pull-request
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+
+  Build:
+    needs: Qodana
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
