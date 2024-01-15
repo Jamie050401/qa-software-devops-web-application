@@ -11,7 +11,7 @@ include:
   - name: CheckDependencyLicenses
 
 exclude:
-  - name: Ignore libraries
+  - name: All
     paths:
       - Application/wwwroot/lib/jquery/dist/jquery.js
 
