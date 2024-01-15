@@ -13,6 +13,6 @@ include:
 exclude:
   - name: Ignore libraries
     paths:
-      - Application/wwwroot/lib/
+      - Application/wwwroot/lib/jquery/dist
 
 linter: jetbrains/qodana-dotnet:latest
