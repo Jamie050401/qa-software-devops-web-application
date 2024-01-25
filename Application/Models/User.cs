@@ -1,11 +1,11 @@
 ﻿namespace Application.Models;
 
-public class User
+public class User(int id, string username, string password, string? firstName, string? lastName, string roleName)
 {
-    public int Id { get; set; }
-    public required string Username { get; set; }
-    public required string Password { get; set; }
-    public string? FirstName { get; set; }
-    public string? LastName { get; set; }
-    public required Role Role { get; set; }
+    public int Id { get; } = id;
+    public string Username { get; } = username;
+    public string Password { get; } = password;
+    public string? FirstName { get; } = firstName;
+    public string? LastName { get; } = lastName;
+    public string RoleName { get; } = roleName;
 }
