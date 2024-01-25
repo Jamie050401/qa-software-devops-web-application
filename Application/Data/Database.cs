@@ -102,8 +102,33 @@ public class Database
         this.ExecuteNonQuery(sqlDeleteFromDatabase);
     }
 
+    public void AddRoleToDatabase(Role role)
+    {
+        var fundInDb = this.GetRoleFromDatabase(role.Name);
+
+        if (fundInDb.Result != new NotFoundResult())
+        {
+            this.DeleteRoleFromDatabase(role.Name);
+        }
+
+        var sqlAddToDatabase = $"""
+                                INSERT INTO Roles (Name)
+                                VALUES ({role.Name});
+                                """;
+
+        this.ExecuteNonQuery(sqlAddToDatabase);
+    }
+
+    public void AddRolesToDatabase(IEnumerable<Role> roles)
+    {
+        foreach (var role in roles)
+        {
+            this.AddRoleToDatabase(role);
+        }
+    }
+
     // TODO - Implement local caching
-    public ActionResult<User> GetUserFromDatabase(string? userId = null, string? userName = null)
+    public ActionResult<User> GetUserFromDatabase(int? userId = null, string? userName = null)
     {
         if (userId is null && userName is null)
         {
@@ -129,7 +154,7 @@ public class Database
         return user;
     }
 
-    public void DeleteUserFromDatabase(string? userId = null, string? userName = null)
+    public void DeleteUserFromDatabase(int? userId = null, string? userName = null)
     {
         if (userId is null && userName is null) return;
 
@@ -139,6 +164,31 @@ public class Database
 
         var sqlDeleteFromDatabase = userId is null ? $"DELETE FROM Users WHERE Username = {userName};" : $"DELETE FROM Users WHERE Username = {userId};";
         this.ExecuteNonQuery(sqlDeleteFromDatabase);
+    }
+
+    public void AddUserToDatabase(User user)
+    {
+        var fundInDb = this.GetUserFromDatabase(user.Id);
+
+        if (fundInDb.Result != new NotFoundResult())
+        {
+            this.DeleteUserFromDatabase(user.Id);
+        }
+
+        var sqlAddToDatabase = $"""
+                                INSERT INTO Users (Id, Username, Password, FirstName, LastName, RoleName)
+                                VALUES ({user.Id}, {user.Username}, {user.Password}, {user.FirstName}, {user.LastName}, {user.RoleName});
+                                """;
+
+        this.ExecuteNonQuery(sqlAddToDatabase);
+    }
+
+    public void AddUsersToDatabase(IEnumerable<User> users)
+    {
+        foreach (var user in users)
+        {
+            this.AddUserToDatabase(user);
+        }
     }
 
     private void CreateTables()
@@ -172,12 +222,12 @@ public class Database
         this.ExecuteNonQuery(sqlCreateTables);
     }
 
-    private int ExecuteNonQuery(string sqlCommand)
+    private void ExecuteNonQuery(string sqlCommand)
     {
         using var dbConnection = new SQLiteConnection(ConnectionString); dbConnection.Open();
         using var dbCommand = dbConnection.CreateCommand();
         dbCommand.CommandText = sqlCommand;
-        return dbCommand.ExecuteNonQuery();
+        dbCommand.ExecuteNonQuery();
     }
 
     private ExecuteReaderResponse ExecuteReader(string sqlCommand)
