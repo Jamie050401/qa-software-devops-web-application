@@ -1,5 +1,4 @@
 using Application.Data;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,14 +15,11 @@ builder
         options.Preload = true;
         options.IncludeSubDomains = true;
         options.MaxAge = TimeSpan.FromDays(60);
-    })
-    .AddDbContext<DatabaseContext>(options =>
-    {
-        var connectionString = builder.Configuration["ConnectionStrings:Sqlite"];
-        options.UseSqlite(connectionString);
     });
 
 var app = builder.Build();
+
+var database = new Database(app.Configuration);
 
 if (!app.Environment.IsDevelopment())
 {
