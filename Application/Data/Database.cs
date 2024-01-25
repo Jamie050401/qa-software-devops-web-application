@@ -40,20 +40,17 @@ public class Database
         return fund;
     }
 
-    public ActionResult<int> DeleteFundFromDatabase(int fundId)
+    public void DeleteFundFromDatabase(int fundId)
     {
         var fundInDb = this.GetFundFromDatabase(fundId);
 
-        if (fundInDb.Result == new NotFoundResult())
-        {
-            return new NotFoundResult();
-        }
+        if (fundInDb.Result == new NotFoundResult()) return;
 
         var sqlDeleteFromDatabase = $"DELETE FROM Funds WHERE Id = {fundId}";
-        return this.ExecuteNonQuery(sqlDeleteFromDatabase);
+        this.ExecuteNonQuery(sqlDeleteFromDatabase);
     }
 
-    public int AddFundToDatabase(Fund fund)
+    public void AddFundToDatabase(Fund fund)
     {
         var fundInDb = this.GetFundFromDatabase(fund.Id);
 
@@ -66,12 +63,16 @@ public class Database
                                 INSERT INTO Funds (Id, Name, GrowthRate, Charge)
                                 VALUES ({fund.Id}, "{fund.Name}", {fund.GrowthRate}, {fund.Charge});
                                 """;
-        return this.ExecuteNonQuery(sqlAddToDatabase);
+
+        this.ExecuteNonQuery(sqlAddToDatabase);
     }
 
-    public int AddFundsToDatabase(IEnumerable<Fund> funds)
+    public void AddFundsToDatabase(IEnumerable<Fund> funds)
     {
-        return funds.Sum(this.AddFundToDatabase);
+        foreach (var fund in funds)
+        {
+            this.AddFundToDatabase(fund);
+        }
     }
 
     // TODO - Implement local caching
@@ -91,6 +92,16 @@ public class Database
         return role;
     }
 
+    public void DeleteRoleFromDatabase(string roleName)
+    {
+        var fundInDb = this.GetRoleFromDatabase(roleName);
+
+        if (fundInDb.Result == new NotFoundResult()) return;
+
+        var sqlDeleteFromDatabase = $"DELETE FROM Roles WHERE Name = {roleName}";
+        this.ExecuteNonQuery(sqlDeleteFromDatabase);
+    }
+
     // TODO - Implement local caching
     public ActionResult<User> GetUserFromDatabase(string? userId = null, string? userName = null)
     {
@@ -99,8 +110,7 @@ public class Database
             return new StatusCodeResult(400);
         }
 
-        var sqlGetFromDatabase = userId is null ? $"SELECT * FROM Users WHERE Id = {userName};"
-                                                     : $"SELECT * FROM Users WHERE Id = {userId};";
+        var sqlGetFromDatabase = userId is null ? $"SELECT * FROM Users WHERE Id = {userName};" : $"SELECT * FROM Users WHERE Id = {userId};";
         var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
 
         if (!dbResponse.Reader.Read())
@@ -117,6 +127,18 @@ public class Database
         dbResponse.Dispose();
         var user = new User(id, username, password, firstName, lastName, roleName);
         return user;
+    }
+
+    public void DeleteUserFromDatabase(string? userId = null, string? userName = null)
+    {
+        if (userId is null && userName is null) return;
+
+        var fundInDb = this.GetUserFromDatabase(userId, userName);
+
+        if (fundInDb.Result == new NotFoundResult()) return;
+
+        var sqlDeleteFromDatabase = userId is null ? $"DELETE FROM Users WHERE Username = {userName};" : $"DELETE FROM Users WHERE Username = {userId};";
+        this.ExecuteNonQuery(sqlDeleteFromDatabase);
     }
 
     private void CreateTables()
