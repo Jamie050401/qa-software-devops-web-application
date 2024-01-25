@@ -1,12 +1,5 @@
-using Application.Data;
 
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Configuration.AddConfiguration(new ConfigurationBuilder()
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json")
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json")
-    .Build());
 
 builder
     .Services.AddRazorPages()
@@ -18,8 +11,6 @@ builder
     });
 
 var app = builder.Build();
-
-var database = new Database(app.Configuration);
 
 if (!app.Environment.IsDevelopment())
 {

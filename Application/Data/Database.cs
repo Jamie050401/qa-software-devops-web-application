@@ -1,20 +1,23 @@
 ﻿namespace Application.Data;
 
-using CommandLine;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using System.Data.SQLite;
 
 public class Database
 {
-    public Database(IConfiguration configuration)
+    public Database()
     {
-        Configuration = configuration;
-        ConnectionString = Configuration["ConnectionStrings:Sqlite"];
+        ConnectionString = "Data Source=Data/database.sqlite;Version=3;";
         this.CreateTables();
     }
 
-    private IConfiguration Configuration { get; }
+    public Database(string? connectionString)
+    {
+        ConnectionString = connectionString;
+        this.CreateTables();
+    }
+
     private string? ConnectionString { get; }
 
     private void CreateTables()
@@ -51,35 +54,58 @@ public class Database
     // TODO - Implement local caching
     public ActionResult<Fund> GetFundFromDatabase(int fundId)
     {
-        var sqlGetFromDatabase = $"SELECT * FROM Funds WHERE Id = {fundId}";
+        var sqlGetFromDatabase = $"SELECT * FROM Funds WHERE Id = {fundId};";
         var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
 
-        if (!dbResponse.Reader.HasRows)
+        if (!dbResponse.Reader.Read())
         {
             return new NotFoundResult();
         }
 
-        var id = dbResponse.Reader["Id"].Cast<int>();
-        var name = dbResponse.Reader["Name"].Cast<string>();
-        var growthRate = dbResponse.Reader["GrowthRate"].Cast<decimal>();
-        var charge = dbResponse.Reader["Charge"].Cast<decimal>();
+        var id = dbResponse.Reader.GetInt32(0);
+        var name = dbResponse.Reader.GetString(1);
+        var growthRate = dbResponse.Reader.GetDecimal(2);
+        var charge = dbResponse.Reader.GetDecimal(3);
         dbResponse.Dispose();
         var fund = new Fund(id, name, growthRate, charge);
         return fund;
     }
 
+    // ReSharper disable once MemberCanBePrivate.Global
+    public int AddFundToDatabase(Fund fund)
+    {
+        var fundInDb = this.GetFundFromDatabase(fund.Id);
+
+        if (fundInDb.Result != new NotFoundResult())
+        {
+            // TODO - Implement logic to delete and add new item in database
+            return 0;
+        }
+
+        var sqlAddToDatabase = $"""
+                                INSERT INTO Funds (Id, Name, GrowthRate, Charge)
+                                VALUES ({fund.Id}, "{fund.Name}", {fund.GrowthRate}, {fund.Charge});
+                                """;
+        return this.ExecuteNonQuery(sqlAddToDatabase);
+    }
+
+    public int AddFundsToDatabase(IEnumerable<Fund> funds)
+    {
+        return funds.Sum(this.AddFundToDatabase);
+    }
+
     // TODO - Implement local caching
     public ActionResult<Role> GetRoleFromDatabase(string roleName)
     {
-        var sqlGetFromDatabase = $"SELECT * FROM Roles WHERE Name = {roleName}";
+        var sqlGetFromDatabase = $"SELECT * FROM Roles WHERE Name = {roleName};";
         var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
 
-        if (!dbResponse.Reader.HasRows)
+        if (!dbResponse.Reader.Read())
         {
             return new NotFoundResult();
         }
 
-        var name = dbResponse.Reader["Name"].Cast<string>();
+        var name = dbResponse.Reader.GetString(0);
         dbResponse.Dispose();
         var role = new Role(name);
         return role;
@@ -93,38 +119,37 @@ public class Database
             return new StatusCodeResult(400);
         }
 
-        var sqlGetFromDatabase = userId is null ? $"SELECT * FROM Users WHERE Id = {userName}" : $"SELECT * FROM Users WHERE Id = {userId}";
+        var sqlGetFromDatabase = userId is null ? $"SELECT * FROM Users WHERE Id = {userName};"
+                                                     : $"SELECT * FROM Users WHERE Id = {userId};";
         var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
 
-        if (!dbResponse.Reader.HasRows)
+        if (!dbResponse.Reader.Read())
         {
             return new NotFoundResult();
         }
 
-        var id = dbResponse.Reader["Id"].Cast<int>();
-        var username = dbResponse.Reader["Username"].Cast<string>();
-        var password = dbResponse.Reader["Password"].Cast<string>();
-        var firstName = dbResponse.Reader["FirstName"].Cast<string?>();
-        var lastName = dbResponse.Reader["LastName"].Cast<string?>();
-        var roleName = dbResponse.Reader["Role"].Cast<string>();
+        var id = dbResponse.Reader.GetInt32(0);
+        var username = (string)dbResponse.Reader.GetString(1);
+        var password = (string)dbResponse.Reader.GetString(2);
+        var firstName = dbResponse.Reader.IsDBNull(3) ? null : dbResponse.Reader.GetString(3);
+        var lastName = dbResponse.Reader.IsDBNull(4) ? null : dbResponse.Reader.GetString(4);
+        var roleName = dbResponse.Reader.GetString(5);
         dbResponse.Dispose();
         var user = new User(id, username, password, firstName, lastName, roleName);
         return user;
     }
 
-    private void ExecuteNonQuery(string sqlCommand)
+    private int ExecuteNonQuery(string sqlCommand)
     {
-        using var dbConnection = new SQLiteConnection(ConnectionString);
-        dbConnection.Open();
+        using var dbConnection = new SQLiteConnection(ConnectionString); dbConnection.Open();
         using var dbCommand = dbConnection.CreateCommand();
         dbCommand.CommandText = sqlCommand;
-        dbCommand.ExecuteNonQuery();
+        return dbCommand.ExecuteNonQuery();
     }
 
     private ExecuteReaderResponse ExecuteReader(string sqlCommand)
     {
-        var dbConnection = new SQLiteConnection(ConnectionString);
-        dbConnection.Open();
+        var dbConnection = new SQLiteConnection(ConnectionString); dbConnection.Open();
         var dbCommand = dbConnection.CreateCommand();
         dbCommand.CommandText = sqlCommand;
         return new ExecuteReaderResponse(dbConnection, dbCommand, dbCommand.ExecuteReader());
@@ -132,9 +157,9 @@ public class Database
 
     private readonly struct ExecuteReaderResponse(SQLiteConnection connection, SQLiteCommand command, SQLiteDataReader reader)
     {
-        public SQLiteConnection Connection { get; } = connection;
-        public SQLiteCommand Command { get; } = command;
         public SQLiteDataReader Reader { get; } = reader;
+        private SQLiteConnection Connection { get; } = connection;
+        private SQLiteCommand Command { get; } = command;
 
         public void Dispose()
         {
