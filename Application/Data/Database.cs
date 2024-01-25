@@ -46,6 +46,8 @@ public class Database
 
         if (fundInDb.Result == new NotFoundResult()) return;
 
+        // TODO - Delete fund from local cache
+
         var sqlDeleteFromDatabase = $"DELETE FROM Funds WHERE Id = {fundId}";
         this.ExecuteNonQuery(sqlDeleteFromDatabase);
     }
@@ -97,6 +99,8 @@ public class Database
         var fundInDb = this.GetRoleFromDatabase(roleName);
 
         if (fundInDb.Result == new NotFoundResult()) return;
+
+        // TODO - Delete role from local cache
 
         var sqlDeleteFromDatabase = $"DELETE FROM Roles WHERE Name = {roleName}";
         this.ExecuteNonQuery(sqlDeleteFromDatabase);
@@ -161,6 +165,8 @@ public class Database
         var fundInDb = this.GetUserFromDatabase(userId, userName);
 
         if (fundInDb.Result == new NotFoundResult()) return;
+
+        // TODO - Delete user from local cache
 
         var sqlDeleteFromDatabase = userId is null ? $"DELETE FROM Users WHERE Username = {userName};" : $"DELETE FROM Users WHERE Username = {userId};";
         this.ExecuteNonQuery(sqlDeleteFromDatabase);
