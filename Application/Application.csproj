@@ -11,8 +11,6 @@
       <PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
       <PackageReference Include="Htmx" Version="1.6.3" />
       <PackageReference Include="Htmx.TagHelpers" Version="1.6.3" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.1" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.1" />
       <PackageReference Include="NUnit" Version="4.0.1" />
       <PackageReference Include="Serilog" Version="3.1.1" />
       <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
