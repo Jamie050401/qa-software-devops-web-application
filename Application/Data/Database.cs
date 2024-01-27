@@ -42,6 +42,7 @@ public class Database
         var charge = dbResponse.Reader.GetDecimal(3);
         dbResponse.Dispose();
         var fund = new Fund(id, name, growthRate, charge);
+        DatabaseManager.AddToCache(fund.Id, fund);
         return new OkObjectResult(fund);
     }
 
@@ -104,6 +105,7 @@ public class Database
         var name = dbResponse.Reader.GetString(0);
         dbResponse.Dispose();
         var role = new Role(name);
+        DatabaseManager.AddToCache(role.Name, role);
         return new OkObjectResult(role);
     }
 
@@ -176,6 +178,8 @@ public class Database
         var roleName = dbResponse.Reader.GetString(5);
         dbResponse.Dispose();
         var user = new User(id, username, password, firstName, lastName, roleName);
+        DatabaseManager.AddToCache(user.Id, user);
+        DatabaseManager.AddToCache(user.Username, user);
         return new OkObjectResult(user);
     }
 
