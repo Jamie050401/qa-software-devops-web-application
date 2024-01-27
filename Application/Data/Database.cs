@@ -48,7 +48,7 @@ public class Database
 
         // TODO - Delete fund from local cache
 
-        var sqlDeleteFromDatabase = $"DELETE FROM Funds WHERE Id = {fundId}";
+        var sqlDeleteFromDatabase = $"DELETE FROM Funds WHERE Id = {fundId};";
         this.ExecuteNonQuery(sqlDeleteFromDatabase);
     }
 
@@ -102,7 +102,7 @@ public class Database
 
         // TODO - Delete role from local cache
 
-        var sqlDeleteFromDatabase = $"DELETE FROM Roles WHERE Name = {roleName}";
+        var sqlDeleteFromDatabase = $"DELETE FROM Roles WHERE Name = {roleName};";
         this.ExecuteNonQuery(sqlDeleteFromDatabase);
     }
 
@@ -139,7 +139,7 @@ public class Database
             return new StatusCodeResult(400);
         }
 
-        var sqlGetFromDatabase = userId is null ? $"SELECT * FROM Users WHERE Id = {userName};" : $"SELECT * FROM Users WHERE Id = {userId};";
+        var sqlGetFromDatabase = userId is null ? $"SELECT * FROM Users WHERE Username = {userName};" : $"SELECT * FROM Users WHERE Id = {userId};";
         var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
 
         if (!dbResponse.Reader.Read())
@@ -168,7 +168,7 @@ public class Database
 
         // TODO - Delete user from local cache
 
-        var sqlDeleteFromDatabase = userId is null ? $"DELETE FROM Users WHERE Username = {userName};" : $"DELETE FROM Users WHERE Username = {userId};";
+        var sqlDeleteFromDatabase = userId is null ? $"DELETE FROM Users WHERE Username = {userName};" : $"DELETE FROM Users WHERE Id = {userId};";
         this.ExecuteNonQuery(sqlDeleteFromDatabase);
     }
 
