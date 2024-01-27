@@ -20,9 +20,14 @@ public class Database
 
     private string? ConnectionString { get; }
 
-    // TODO - Implement local caching
     public ActionResult<Fund> GetFundFromDatabase(int fundId)
     {
+        var fundInCache = (Fund?)DatabaseManager.GetFromCache(fundId);
+        if (fundInCache is not null)
+        {
+            return new OkObjectResult(fundInCache);
+        }
+
         var sqlGetFromDatabase = $"SELECT * FROM Funds WHERE Id = {fundId};";
         var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
 
@@ -37,7 +42,7 @@ public class Database
         var charge = dbResponse.Reader.GetDecimal(3);
         dbResponse.Dispose();
         var fund = new Fund(id, name, growthRate, charge);
-        return fund;
+        return new OkObjectResult(fund);
     }
 
     public void DeleteFundFromDatabase(int fundId)
@@ -46,10 +51,12 @@ public class Database
 
         if (fundInDb.Result == new NotFoundResult()) return;
 
-        // TODO - Delete fund from local cache
-
         var sqlDeleteFromDatabase = $"DELETE FROM Funds WHERE Id = {fundId};";
-        this.ExecuteNonQuery(sqlDeleteFromDatabase);
+        var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
+        if (affected > 0)
+        {
+            DatabaseManager.DeleteFromCache(fundId);
+        }
     }
 
     public void AddFundToDatabase(Fund fund)
@@ -65,8 +72,9 @@ public class Database
                                 INSERT INTO Funds (Id, Name, GrowthRate, Charge)
                                 VALUES ({fund.Id}, "{fund.Name}", {fund.GrowthRate}, {fund.Charge});
                                 """;
-
-        this.ExecuteNonQuery(sqlAddToDatabase);
+        var affected = this.ExecuteNonQuery(sqlAddToDatabase);
+        if (affected <= 0) return;
+        DatabaseManager.AddToCache(fund.Id, fund);
     }
 
     public void AddFundsToDatabase(IEnumerable<Fund> funds)
@@ -77,9 +85,14 @@ public class Database
         }
     }
 
-    // TODO - Implement local caching
     public ActionResult<Role> GetRoleFromDatabase(string roleName)
     {
+        var roleInCache = (Role?)DatabaseManager.GetFromCache(roleName);
+        if (roleInCache is not null)
+        {
+            return new OkObjectResult(roleInCache);
+        }
+
         var sqlGetFromDatabase = $"SELECT * FROM Roles WHERE Name = {roleName};";
         var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
 
@@ -91,7 +104,7 @@ public class Database
         var name = dbResponse.Reader.GetString(0);
         dbResponse.Dispose();
         var role = new Role(name);
-        return role;
+        return new OkObjectResult(role);
     }
 
     public void DeleteRoleFromDatabase(string roleName)
@@ -100,10 +113,12 @@ public class Database
 
         if (fundInDb.Result == new NotFoundResult()) return;
 
-        // TODO - Delete role from local cache
-
         var sqlDeleteFromDatabase = $"DELETE FROM Roles WHERE Name = {roleName};";
-        this.ExecuteNonQuery(sqlDeleteFromDatabase);
+        var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
+        if (affected > 0)
+        {
+            DatabaseManager.DeleteFromCache(roleName);
+        }
     }
 
     public void AddRoleToDatabase(Role role)
@@ -119,8 +134,9 @@ public class Database
                                 INSERT INTO Roles (Name)
                                 VALUES ({role.Name});
                                 """;
-
-        this.ExecuteNonQuery(sqlAddToDatabase);
+        var affected = this.ExecuteNonQuery(sqlAddToDatabase);
+        if (affected <= 0) return;
+        DatabaseManager.AddToCache(role.Name, role);
     }
 
     public void AddRolesToDatabase(IEnumerable<Role> roles)
@@ -131,12 +147,17 @@ public class Database
         }
     }
 
-    // TODO - Implement local caching
     public ActionResult<User> GetUserFromDatabase(int? userId = null, string? userName = null)
     {
         if (userId is null && userName is null)
         {
             return new StatusCodeResult(400);
+        }
+
+        var userInCache = (User?)DatabaseManager.GetFromCache(userId) ?? (User?)DatabaseManager.GetFromCache(userName);
+        if (userInCache is not null)
+        {
+            return new OkObjectResult(userInCache);
         }
 
         var sqlGetFromDatabase = userId is null ? $"SELECT * FROM Users WHERE Username = {userName};" : $"SELECT * FROM Users WHERE Id = {userId};";
@@ -155,7 +176,7 @@ public class Database
         var roleName = dbResponse.Reader.GetString(5);
         dbResponse.Dispose();
         var user = new User(id, username, password, firstName, lastName, roleName);
-        return user;
+        return new OkObjectResult(user);
     }
 
     public void DeleteUserFromDatabase(int? userId = null, string? userName = null)
@@ -166,10 +187,11 @@ public class Database
 
         if (fundInDb.Result == new NotFoundResult()) return;
 
-        // TODO - Delete user from local cache
-
         var sqlDeleteFromDatabase = userId is null ? $"DELETE FROM Users WHERE Username = {userName};" : $"DELETE FROM Users WHERE Id = {userId};";
-        this.ExecuteNonQuery(sqlDeleteFromDatabase);
+        var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
+        if (affected <= 0) return;
+        DatabaseManager.DeleteFromCache(userId);
+        DatabaseManager.DeleteFromCache(userName);
     }
 
     public void AddUserToDatabase(User user)
@@ -185,8 +207,10 @@ public class Database
                                 INSERT INTO Users (Id, Username, Password, FirstName, LastName, RoleName)
                                 VALUES ({user.Id}, {user.Username}, {user.Password}, {user.FirstName}, {user.LastName}, {user.RoleName});
                                 """;
-
-        this.ExecuteNonQuery(sqlAddToDatabase);
+        var affected = this.ExecuteNonQuery(sqlAddToDatabase);
+        if (affected <= 0) return;
+        DatabaseManager.AddToCache(user.Id, user);
+        DatabaseManager.AddToCache(user.Username, user);
     }
 
     public void AddUsersToDatabase(IEnumerable<User> users)
@@ -228,12 +252,12 @@ public class Database
         this.ExecuteNonQuery(sqlCreateTables);
     }
 
-    private void ExecuteNonQuery(string sqlCommand)
+    private int ExecuteNonQuery(string sqlCommand)
     {
         using var dbConnection = new SQLiteConnection(ConnectionString); dbConnection.Open();
         using var dbCommand = dbConnection.CreateCommand();
         dbCommand.CommandText = sqlCommand;
-        dbCommand.ExecuteNonQuery();
+        return dbCommand.ExecuteNonQuery();
     }
 
     private ExecuteReaderResponse ExecuteReader(string sqlCommand)
