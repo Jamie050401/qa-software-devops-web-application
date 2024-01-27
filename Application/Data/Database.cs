@@ -3,6 +3,7 @@
 using Common;
 using Models;
 using System.Data.SQLite;
+using System.Diagnostics;
 
 public class Database
 {
@@ -194,8 +195,9 @@ public class Database
         var sqlDeleteFromDatabase = userId is null ? $"DELETE FROM Users WHERE Username = {userName};" : $"DELETE FROM Users WHERE Id = {userId};";
         var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
         if (affected <= 0) return;
-        DatabaseManager.DeleteFromCache(userId);
-        DatabaseManager.DeleteFromCache(userName);
+        Debug.Assert(fundInDb.Value != null, "fundInDb.Value != null");
+        DatabaseManager.DeleteFromCache(fundInDb.Value.Id);
+        DatabaseManager.DeleteFromCache(fundInDb.Value.Username);
     }
 
     public void AddUserToDatabase(User user)
