@@ -1,6 +1,6 @@
 ﻿namespace Application.Data;
 
-using Microsoft.AspNetCore.Mvc;
+using Common;
 using Models;
 using System.Data.SQLite;
 
@@ -20,12 +20,12 @@ public class Database
 
     private string? ConnectionString { get; }
 
-    public ActionResult<Fund> GetFundFromDatabase(int fundId)
+    public Response<Fund, Error> GetFundFromDatabase(int fundId)
     {
         var fundInCache = (Fund?)DatabaseManager.GetFromCache(fundId);
         if (fundInCache is not null)
         {
-            return new OkObjectResult(fundInCache);
+            return Response<Fund, Error>.OkValueResponse(fundInCache);
         }
 
         var sqlGetFromDatabase = $"SELECT * FROM Funds WHERE Id = {fundId};";
@@ -33,7 +33,7 @@ public class Database
 
         if (!dbResponse.Reader.Read())
         {
-            return new NotFoundResult();
+            return Response<Fund, Error>.NotFoundResponse();
         }
 
         var id = dbResponse.Reader.GetInt32(0);
@@ -41,16 +41,16 @@ public class Database
         var growthRate = dbResponse.Reader.GetDecimal(2);
         var charge = dbResponse.Reader.GetDecimal(3);
         dbResponse.Dispose();
-        var fund = new Fund(id, name, growthRate, charge);
-        DatabaseManager.AddToCache(fund.Id, fund);
-        return new OkObjectResult(fund);
+        var fundInDb = new Fund(id, name, growthRate, charge);
+        DatabaseManager.AddToCache(fundInDb.Id, fundInDb);
+        return Response<Fund, Error>.OkValueResponse(fundInDb);
     }
 
     public void DeleteFundFromDatabase(int fundId)
     {
         var fundInDb = this.GetFundFromDatabase(fundId);
 
-        if (fundInDb.Result == new NotFoundResult()) return;
+        if (fundInDb.Status == ResponseStatus.Error) return;
 
         var sqlDeleteFromDatabase = $"DELETE FROM Funds WHERE Id = {fundId};";
         var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
@@ -64,7 +64,7 @@ public class Database
     {
         var fundInDb = this.GetFundFromDatabase(fund.Id);
 
-        if (fundInDb.Result != new NotFoundResult())
+        if (fundInDb.Status == ResponseStatus.Success)
         {
             this.DeleteFundFromDatabase(fund.Id);
         }
@@ -86,12 +86,12 @@ public class Database
         }
     }
 
-    public ActionResult<Role> GetRoleFromDatabase(string roleName)
+    public Response<Role, Error> GetRoleFromDatabase(string roleName)
     {
         var roleInCache = (Role?)DatabaseManager.GetFromCache(roleName);
         if (roleInCache is not null)
         {
-            return new OkObjectResult(roleInCache);
+            return Response<Role, Error>.OkValueResponse(roleInCache);
         }
 
         var sqlGetFromDatabase = $"SELECT * FROM Roles WHERE Name = {roleName};";
@@ -99,21 +99,21 @@ public class Database
 
         if (!dbResponse.Reader.Read())
         {
-            return new NotFoundResult();
+            return Response<Role, Error>.NotFoundResponse();
         }
 
         var name = dbResponse.Reader.GetString(0);
         dbResponse.Dispose();
-        var role = new Role(name);
-        DatabaseManager.AddToCache(role.Name, role);
-        return new OkObjectResult(role);
+        var roleInDb = new Role(name);
+        DatabaseManager.AddToCache(roleInDb.Name, roleInDb);
+        return Response<Role, Error>.OkValueResponse(roleInDb);
     }
 
     public void DeleteRoleFromDatabase(string roleName)
     {
         var fundInDb = this.GetRoleFromDatabase(roleName);
 
-        if (fundInDb.Result == new NotFoundResult()) return;
+        if (fundInDb.Status == ResponseStatus.Error) return;
 
         var sqlDeleteFromDatabase = $"DELETE FROM Roles WHERE Name = {roleName};";
         var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
@@ -127,7 +127,7 @@ public class Database
     {
         var fundInDb = this.GetRoleFromDatabase(role.Name);
 
-        if (fundInDb.Result != new NotFoundResult())
+        if (fundInDb.Status == ResponseStatus.Success)
         {
             this.DeleteRoleFromDatabase(role.Name);
         }
@@ -149,17 +149,17 @@ public class Database
         }
     }
 
-    public ActionResult<User> GetUserFromDatabase(int? userId = null, string? userName = null)
+    public Response<User, Error> GetUserFromDatabase(int? userId = null, string? userName = null)
     {
         if (userId is null && userName is null)
         {
-            return new StatusCodeResult(400);
+            return Response<User, Error>.BadRequestResponse();
         }
 
         var userInCache = (User?)DatabaseManager.GetFromCache(userId) ?? (User?)DatabaseManager.GetFromCache(userName);
         if (userInCache is not null)
         {
-            return new OkObjectResult(userInCache);
+            return Response<User, Error>.OkValueResponse(userInCache);
         }
 
         var sqlGetFromDatabase = userId is null ? $"SELECT * FROM Users WHERE Username = {userName};" : $"SELECT * FROM Users WHERE Id = {userId};";
@@ -167,7 +167,7 @@ public class Database
 
         if (!dbResponse.Reader.Read())
         {
-            return new NotFoundResult();
+            return Response<User, Error>.NotFoundResponse();
         }
 
         var id = dbResponse.Reader.GetInt32(0);
@@ -177,10 +177,10 @@ public class Database
         var lastName = dbResponse.Reader.IsDBNull(4) ? null : dbResponse.Reader.GetString(4);
         var roleName = dbResponse.Reader.GetString(5);
         dbResponse.Dispose();
-        var user = new User(id, username, password, firstName, lastName, roleName);
-        DatabaseManager.AddToCache(user.Id, user);
-        DatabaseManager.AddToCache(user.Username, user);
-        return new OkObjectResult(user);
+        var userInDb = new User(id, username, password, firstName, lastName, roleName);
+        DatabaseManager.AddToCache(userInDb.Id, userInDb);
+        DatabaseManager.AddToCache(userInDb.Username, userInDb);
+        return Response<User, Error>.OkValueResponse(userInDb);
     }
 
     public void DeleteUserFromDatabase(int? userId = null, string? userName = null)
@@ -189,7 +189,7 @@ public class Database
 
         var fundInDb = this.GetUserFromDatabase(userId, userName);
 
-        if (fundInDb.Result == new NotFoundResult()) return;
+        if (fundInDb.Status == ResponseStatus.Error) return;
 
         var sqlDeleteFromDatabase = userId is null ? $"DELETE FROM Users WHERE Username = {userName};" : $"DELETE FROM Users WHERE Id = {userId};";
         var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
@@ -202,7 +202,7 @@ public class Database
     {
         var fundInDb = this.GetUserFromDatabase(user.Id);
 
-        if (fundInDb.Result != new NotFoundResult())
+        if (fundInDb.Status == ResponseStatus.Success)
         {
             this.DeleteUserFromDatabase(user.Id);
         }
