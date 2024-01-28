@@ -10,6 +10,7 @@ public class Response<TValue, TError>(ResponseStatus status)
 {
     public ResponseStatus Status { get; } = status;
     public TValue? Value { get; set; }
+    public bool HasValue => Value is not null;
     public List<TError> Errors { get; set; } = new();
 
     public void AddError(TError error)

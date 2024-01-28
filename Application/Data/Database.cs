@@ -2,20 +2,15 @@
 
 using Common;
 using Models;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.Diagnostics;
 
 public class Database
 {
     public Database()
     {
-        ConnectionString = "Data Source=Data/database.sqlite;Version=3;";
-        this.CreateTables();
-    }
-
-    public Database(string? connectionString)
-    {
-        ConnectionString = connectionString;
+        Directory.CreateDirectory("Data");
+        ConnectionString = "Data Source=Data/database.sqlite;";
         this.CreateTables();
     }
 
@@ -260,7 +255,7 @@ public class Database
 
     private int ExecuteNonQuery(string sqlCommand)
     {
-        using var dbConnection = new SQLiteConnection(ConnectionString); dbConnection.Open();
+        using var dbConnection = new SqliteConnection(ConnectionString); dbConnection.Open();
         using var dbCommand = dbConnection.CreateCommand();
         dbCommand.CommandText = sqlCommand;
         return dbCommand.ExecuteNonQuery();
@@ -268,17 +263,17 @@ public class Database
 
     private ExecuteReaderResponse ExecuteReader(string sqlCommand)
     {
-        var dbConnection = new SQLiteConnection(ConnectionString); dbConnection.Open();
+        var dbConnection = new SqliteConnection(ConnectionString); dbConnection.Open();
         var dbCommand = dbConnection.CreateCommand();
         dbCommand.CommandText = sqlCommand;
         return new ExecuteReaderResponse(dbConnection, dbCommand, dbCommand.ExecuteReader());
     }
 
-    private readonly struct ExecuteReaderResponse(SQLiteConnection connection, SQLiteCommand command, SQLiteDataReader reader)
+    private readonly struct ExecuteReaderResponse(SqliteConnection connection, SqliteCommand command, SqliteDataReader reader)
     {
-        public SQLiteDataReader Reader { get; } = reader;
-        private SQLiteConnection Connection { get; } = connection;
-        private SQLiteCommand Command { get; } = command;
+        public SqliteDataReader Reader { get; } = reader;
+        private SqliteConnection Connection { get; } = connection;
+        private SqliteCommand Command { get; } = command;
 
         public void Dispose()
         {
