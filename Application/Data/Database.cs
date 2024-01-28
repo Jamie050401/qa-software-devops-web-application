@@ -1,8 +1,8 @@
 ﻿namespace Application.Data;
 
 using Common;
-using Models;
 using Microsoft.Data.Sqlite;
+using Models;
 using System.Diagnostics;
 
 public class Database
@@ -66,9 +66,9 @@ public class Database
         }
 
         var sqlAddToDatabase = $"""
-                                INSERT INTO Funds (Id, Name, GrowthRate, Charge)
-                                VALUES ({fund.Id}, "{fund.Name}", {fund.GrowthRate}, {fund.Charge});
-                                """;
+            INSERT INTO Funds (Id, Name, GrowthRate, Charge)
+            VALUES ({fund.Id}, "{fund.Name}", {fund.GrowthRate}, {fund.Charge});
+        """;
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
         if (affected <= 0) return;
         DatabaseManager.AddToCache(fund.Id, fund);
@@ -129,9 +129,9 @@ public class Database
         }
 
         var sqlAddToDatabase = $"""
-                                INSERT INTO Roles (Name)
-                                VALUES ({role.Name});
-                                """;
+            INSERT INTO Roles (Name)
+            VALUES ({role.Name});
+        """;
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
         if (affected <= 0) return;
         DatabaseManager.AddToCache(role.Name, role);
@@ -205,9 +205,9 @@ public class Database
         }
 
         var sqlAddToDatabase = $"""
-                                INSERT INTO Users (Id, Username, Password, FirstName, LastName, RoleName)
-                                VALUES ({user.Id}, {user.Username}, {user.Password}, {user.FirstName}, {user.LastName}, {user.RoleName});
-                                """;
+            INSERT INTO Users (Id, Username, Password, FirstName, LastName, RoleName)
+            VALUES ({user.Id}, {user.Username}, {user.Password}, {user.FirstName}, {user.LastName}, {user.RoleName});
+        """;
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
         if (affected <= 0) return;
         DatabaseManager.AddToCache(user.Id, user);
@@ -225,30 +225,30 @@ public class Database
     private void CreateTables()
     {
         const string sqlCreateTables = """
-                                          CREATE TABLE IF NOT EXISTS Funds (
-                                              Id INTEGER PRIMARY KEY NOT NULL,
-                                              Name TEXT NOT NULL,
-                                              GrowthRate REAL NOT NULL,
-                                              Charge REAL NOT NULL
-                                          );
-                                       
-                                          CREATE TABLE IF NOT EXISTS Roles (
-                                              Name TEXT PRIMARY KEY NOT NULL
-                                          );
-                                       
-                                          CREATE TABLE IF NOT EXISTS Users (
-                                              Id INTEGER PRIMARY KEY NOT NULL,
-                                              Username TEXT NOT NULL,
-                                              Password TEXT NOT NULL,
-                                              FirstName TEXT,
-                                              LastName TEXT,
-                                              RoleName TEXT NOT NULL,
-                                       
-                                              FOREIGN KEY(RoleName) REFERENCES Roles(Name) ON DELETE NO ACTION
-                                          );
-                                          
-                                          CREATE UNIQUE INDEX IF NOT EXISTS idx_Username ON Users(Username);
-                                       """;
+            CREATE TABLE IF NOT EXISTS Funds (
+                Id INTEGER PRIMARY KEY NOT NULL,
+                Name TEXT NOT NULL,
+                GrowthRate REAL NOT NULL,
+                Charge REAL NOT NULL
+            );
+           
+            CREATE TABLE IF NOT EXISTS Roles (
+                Name TEXT PRIMARY KEY NOT NULL
+            );
+           
+            CREATE TABLE IF NOT EXISTS Users (
+                Id INTEGER PRIMARY KEY NOT NULL,
+                Username TEXT NOT NULL,
+                Password TEXT NOT NULL,
+                FirstName TEXT,
+                LastName TEXT,
+                RoleName TEXT NOT NULL,
+           
+                FOREIGN KEY(RoleName) REFERENCES Roles(Name) ON DELETE NO ACTION
+            );
+              
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_Username ON Users(Username);
+        """;
 
         this.ExecuteNonQuery(sqlCreateTables);
     }
