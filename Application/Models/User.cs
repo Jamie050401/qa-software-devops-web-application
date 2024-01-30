@@ -1,6 +1,6 @@
 ﻿namespace Application.Models;
 
-public class User(int id, string username, string password, string? firstName, string? lastName, string roleName)
+public class User(int id, string username, string password, string roleName, string? firstName = null, string? lastName = null)
 {
     public int Id { get; } = id;
     public string Username { get; } = username;
