@@ -191,6 +191,7 @@ public class Database
         var userInDb = new User(id, username, password, roleName, firstName, lastName);
         this.AddToCache($"User{userInDb.Id}", userInDb);
         this.AddToCache($"User{userInDb.Username}", userInDb);
+
         return Response<User, Error>.OkValueResponse(userInDb);
     }
 
@@ -270,6 +271,7 @@ public class Database
         dbResponse.Dispose();
         var resultInDb = new Result(id, userId, totalInvestment, projectedValue);
         this.AddToCache($"Result{resultInDb.Id}", resultInDb);
+
         return Response<Result, Error>.OkValueResponse(resultInDb);
     }
 
