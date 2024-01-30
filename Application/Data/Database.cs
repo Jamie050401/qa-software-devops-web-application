@@ -2,6 +2,7 @@
 
 using Common;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Caching.Memory;
 using Models;
 using System.Diagnostics;
 
@@ -14,11 +15,9 @@ public class Database
         this.CreateTables();
     }
 
-    private string? ConnectionString { get; }
-
     public Response<Fund, Error> GetFundFromDatabase(int fundId)
     {
-        var fundInCache = (Fund?)DatabaseManager.GetFromCache($"Fund{fundId}");
+        var fundInCache = (Fund?)this.GetFromCache($"Fund{fundId}");
         if (fundInCache is not null)
         {
             return Response<Fund, Error>.OkValueResponse(fundInCache);
@@ -38,36 +37,49 @@ public class Database
         var charge = dbResponse.Reader.GetDecimal(3);
         dbResponse.Dispose();
         var fundInDb = new Fund(id, name, growthRate, charge);
-        DatabaseManager.AddToCache($"Fund{fundInDb.Id}", fundInDb);
+        this.AddToCache($"Fund{fundInDb.Id}", fundInDb);
+
         return Response<Fund, Error>.OkValueResponse(fundInDb);
     }
 
     public void DeleteFundFromDatabase(int fundId)
     {
-        var fundInDb = this.GetFundFromDatabase(fundId);
+        var response = this.GetFundFromDatabase(fundId);
 
-        if (fundInDb.Status == ResponseStatus.Error) return;
+        if (response.Status == ResponseStatus.Error) return;
 
         var sqlDeleteFromDatabase = $"DELETE FROM Funds WHERE Id = {fundId};";
         var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
         if (affected > 0)
         {
-            DatabaseManager.DeleteFromCache($"Fund{fundId}");
+            this.DeleteFromCache($"Fund{fundId}");
         }
     }
 
-    // TODO - Replace call to DeleteFundFromDatabase with logic to update existing entry
     public void AddFundToDatabase(Fund fund)
     {
-        this.DeleteFundFromDatabase(fund.Id);
-
-        var sqlAddToDatabase = $"""
-            INSERT INTO Funds (Id, Name, GrowthRate, Charge)
-            VALUES ({fund.Id}, "{fund.Name}", {fund.GrowthRate}, {fund.Charge});
-        """;
+        string sqlAddToDatabase;
+        var response = this.GetFundFromDatabase(fund.Id);
+        if (response.Status is ResponseStatus.Success && response.HasValue)
+        {
+            sqlAddToDatabase = $"""
+                UPDATE Funds
+                SET Name = "{fund.Id}",
+                    GrowthRate = {fund.GrowthRate},
+                    Charge = {fund.Charge}
+                WHERE Id = {fund.Id};
+            """;
+        }
+        else
+        {
+            sqlAddToDatabase = $"""
+                INSERT INTO Funds (Id, Name, GrowthRate, Charge)
+                VALUES ({fund.Id}, "{fund.Name}", {fund.GrowthRate}, {fund.Charge});
+            """;
+        }
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
         if (affected <= 0) return;
-        DatabaseManager.AddToCache($"Fund{fund.Id}", fund);
+        this.AddToCache($"Fund{fund.Id}", fund);
     }
 
     public void AddFundsToDatabase(IEnumerable<Fund> funds)
@@ -80,7 +92,7 @@ public class Database
 
     public Response<Role, Error> GetRoleFromDatabase(string roleName)
     {
-        var roleInCache = (Role?)DatabaseManager.GetFromCache($"Role{roleName}");
+        var roleInCache = (Role?)this.GetFromCache($"Role{roleName}");
         if (roleInCache is not null)
         {
             return Response<Role, Error>.OkValueResponse(roleInCache);
@@ -97,7 +109,8 @@ public class Database
         var name = dbResponse.Reader.GetString(0);
         dbResponse.Dispose();
         var roleInDb = new Role(name);
-        DatabaseManager.AddToCache($"Role{roleInDb.Name}", roleInDb);
+        this.AddToCache($"Role{roleInDb.Name}", roleInDb);
+
         return Response<Role, Error>.OkValueResponse(roleInDb);
     }
 
@@ -111,22 +124,32 @@ public class Database
         var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
         if (affected > 0)
         {
-            DatabaseManager.DeleteFromCache($"Role{roleName}");
+            this.DeleteFromCache($"Role{roleName}");
         }
     }
 
-    // TODO - Replace call to DeleteRoleFromDatabase with logic to update existing entry
     public void AddRoleToDatabase(Role role)
     {
-        this.DeleteRoleFromDatabase(role.Name);
-
-        var sqlAddToDatabase = $"""
-            INSERT INTO Roles (Name)
-            VALUES ("{role.Name}");
-        """;
+        string sqlAddToDatabase;
+        var response = this.GetRoleFromDatabase(role.Name);
+        if (response.Status is ResponseStatus.Success && response.HasValue)
+        {
+            sqlAddToDatabase = $"""
+                UPDATE Roles
+                SET Name = "{role.Name}"
+                WHERE Name = "{role.Name}";
+            """;
+        }
+        else
+        {
+            sqlAddToDatabase = $"""
+                INSERT INTO Roles (Name)
+                VALUES ("{role.Name}");
+            """;
+        }
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
         if (affected <= 0) return;
-        DatabaseManager.AddToCache($"Role{role.Name}", role);
+        this.AddToCache($"Role{role.Name}", role);
     }
 
     public void AddRolesToDatabase(IEnumerable<Role> roles)
@@ -144,7 +167,7 @@ public class Database
             return Response<User, Error>.BadRequestResponse();
         }
 
-        var userInCache = (User?)DatabaseManager.GetFromCache($"User{userId}") ?? (User?)DatabaseManager.GetFromCache($"User{userName}");
+        var userInCache = (User?)this.GetFromCache($"User{userId}") ?? (User?)this.GetFromCache($"User{userName}");
         if (userInCache is not null)
         {
             return Response<User, Error>.OkValueResponse(userInCache);
@@ -166,8 +189,8 @@ public class Database
         var roleName = dbResponse.Reader.GetString(5);
         dbResponse.Dispose();
         var userInDb = new User(id, username, password, roleName, firstName, lastName);
-        DatabaseManager.AddToCache($"User{userInDb.Id}", userInDb);
-        DatabaseManager.AddToCache($"User{userInDb.Username}", userInDb);
+        this.AddToCache($"User{userInDb.Id}", userInDb);
+        this.AddToCache($"User{userInDb.Username}", userInDb);
         return Response<User, Error>.OkValueResponse(userInDb);
     }
 
@@ -183,23 +206,37 @@ public class Database
         var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
         if (affected <= 0) return;
         Debug.Assert(userInDb.Value != null, "fundInDb.Value != null");
-        DatabaseManager.DeleteFromCache($"User{userInDb.Value.Id}");
-        DatabaseManager.DeleteFromCache($"User{userInDb.Value.Username}");
+        this.DeleteFromCache($"User{userInDb.Value.Id}");
+        this.DeleteFromCache($"User{userInDb.Value.Username}");
     }
 
-    // TODO - Replace call to DeleteUserFromDatabase with logic to update existing entry
     public void AddUserToDatabase(User user)
     {
-        this.DeleteUserFromDatabase(user.Id);
-
-        var sqlAddToDatabase = $"""
-            INSERT INTO Users (Id, Username, Password, FirstName, LastName, RoleName)
-            VALUES ({user.Id}, "{user.Username}", "{user.Password}", "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
-        """;
+        string sqlAddToDatabase;
+        var response = this.GetUserFromDatabase(user.Id);
+        if (response.Status is ResponseStatus.Success && response.HasValue)
+        {
+            sqlAddToDatabase = $"""
+                UPDATE Users
+                SET Username = "{user.Username}",
+                    Password = "{user.Password}",
+                    FirstName = "{user.FirstName}",
+                    LastName = "{user.LastName}",
+                    RoleName = "{user.RoleName}"
+                WHERE Id = {user.Id};
+            """;
+        }
+        else
+        {
+            sqlAddToDatabase = $"""
+                INSERT INTO Users (Id, Username, Password, FirstName, LastName, RoleName)
+                VALUES ({user.Id}, "{user.Username}", "{user.Password}", "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
+            """;
+        }
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
         if (affected <= 0) return;
-        DatabaseManager.AddToCache($"User{user.Id}", user);
-        DatabaseManager.AddToCache($"User{user.Username}", user);
+        this.AddToCache($"User{user.Id}", user);
+        this.AddToCache($"User{user.Username}", user);
     }
 
     public void AddUsersToDatabase(IEnumerable<User> users)
@@ -212,7 +249,7 @@ public class Database
 
     public Response<Result, Error> GetResultFromDatabase(int resultId)
     {
-        var resultInCache = (Result?)DatabaseManager.GetFromCache($"Result{resultId}");
+        var resultInCache = (Result?)this.GetFromCache($"Result{resultId}");
         if (resultInCache is not null)
         {
             return Response<Result, Error>.OkValueResponse(resultInCache);
@@ -232,7 +269,7 @@ public class Database
         var projectedValue = dbResponse.Reader.GetDecimal(3);
         dbResponse.Dispose();
         var resultInDb = new Result(id, userId, totalInvestment, projectedValue);
-        DatabaseManager.AddToCache($"Result{resultInDb.Id}", resultInDb);
+        this.AddToCache($"Result{resultInDb.Id}", resultInDb);
         return Response<Result, Error>.OkValueResponse(resultInDb);
     }
 
@@ -246,22 +283,34 @@ public class Database
         var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
         if (affected > 0)
         {
-            DatabaseManager.DeleteFromCache($"Result{resultId}");
+            this.DeleteFromCache($"Result{resultId}");
         }
     }
 
-    // TODO - Replace call to DeleteResultFromDatabase with logic to update existing entry
     public void AddResultToDatabase(Result result)
     {
-        this.DeleteResultFromDatabase(result.Id);
-
-        var sqlAddToDatabase = $"""
-            INSERT INTO Results (Id, UserId, TotalInvestment, ProjectedValue)
-            VALUES ({result.Id}, {result.UserId}, {result.TotalInvestment}, {result.ProjectedValue});
-        """;
+        string sqlAddToDatabase;
+        var response = this.GetResultFromDatabase(result.Id);
+        if (response.Status is ResponseStatus.Success && response.HasValue)
+        {
+            sqlAddToDatabase = $"""
+                UPDATE Results
+                SET UserId = {result.UserId},
+                    TotalInvestment = {result.TotalInvestment},
+                    ProjectedValue = {result.ProjectedValue}
+                WHERE Id = {result.Id};
+            """;
+        }
+        else
+        {
+            sqlAddToDatabase = $"""
+                INSERT INTO Results (Id, UserId, TotalInvestment, ProjectedValue)
+                VALUES ({result.Id}, {result.UserId}, {result.TotalInvestment}, {result.ProjectedValue});
+            """;
+        }
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
         if (affected <= 0) return;
-        DatabaseManager.AddToCache($"Result{result.Id}", result);
+        this.AddToCache($"Result{result.Id}", result);
     }
 
     public void AddResultsToDatabase(IEnumerable<Result> results)
@@ -335,4 +384,29 @@ public class Database
             Reader.Close(); Command.Dispose(); Connection.Close();
         }
     }
+
+    private void DeleteFromCache(object? key)
+    {
+        if (key is not null) Cache.Remove(key);
+    }
+
+    private void AddToCache(object key, object value)
+    {
+        Cache.Set(key, value, CacheEntryOptions);
+    }
+
+    private object? GetFromCache(object? key)
+    {
+        if (key is null) return null;
+
+        Cache.TryGetValue(key, out var value);
+        return value;
+    }
+
+    private string? ConnectionString { get; }
+    private MemoryCache Cache { get; } = new(new MemoryCacheOptions());
+    private MemoryCacheEntryOptions CacheEntryOptions { get; } = new()
+    {
+        SlidingExpiration = TimeSpan.FromHours(1)
+    };
 }

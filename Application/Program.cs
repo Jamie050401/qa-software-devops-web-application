@@ -1,3 +1,5 @@
+using Application.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder
@@ -17,6 +19,8 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
+
+DatabaseManager.InitialiseDatabase();
 
 app.UseStaticFiles();
 app.UseRouting();
