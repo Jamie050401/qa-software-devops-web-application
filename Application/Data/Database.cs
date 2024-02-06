@@ -82,14 +82,6 @@ public class Database
         this.AddToCache($"Fund{fund.Id}", fund);
     }
 
-    public void AddFundsToDatabase(IEnumerable<Fund> funds)
-    {
-        foreach (var fund in funds)
-        {
-            this.AddFundToDatabase(fund);
-        }
-    }
-
     public Response<Role, Error> GetRoleFromDatabase(string roleName)
     {
         var roleInCache = (Role?)this.GetFromCache($"Role{roleName}");
@@ -150,14 +142,6 @@ public class Database
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
         if (affected <= 0) return;
         this.AddToCache($"Role{role.Name}", role);
-    }
-
-    public void AddRolesToDatabase(IEnumerable<Role> roles)
-    {
-        foreach (var role in roles)
-        {
-            this.AddRoleToDatabase(role);
-        }
     }
 
     public Response<User, Error> GetUserFromDatabase(int? userId = null, string? userName = null)
@@ -240,14 +224,6 @@ public class Database
         this.AddToCache($"User{user.Username}", user);
     }
 
-    public void AddUsersToDatabase(IEnumerable<User> users)
-    {
-        foreach (var user in users)
-        {
-            this.AddUserToDatabase(user);
-        }
-    }
-
     public Response<Result, Error> GetResultFromDatabase(int resultId)
     {
         var resultInCache = (Result?)this.GetFromCache($"Result{resultId}");
@@ -313,14 +289,6 @@ public class Database
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
         if (affected <= 0) return;
         this.AddToCache($"Result{result.Id}", result);
-    }
-
-    public void AddResultsToDatabase(IEnumerable<Result> results)
-    {
-        foreach (var result in results)
-        {
-            this.AddResultToDatabase(result);
-        }
     }
 
     private void CreateTables()
