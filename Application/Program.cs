@@ -9,7 +9,13 @@ builder
         options.Preload = true;
         options.IncludeSubDomains = true;
         options.MaxAge = TimeSpan.FromDays(60);
-    });
+    })
+    .AddSession(options =>
+    {
+        options.Cookie.Name = "QAWebApplication";
+        options.IdleTimeout = TimeSpan.FromMinutes(30);
+    })
+    .AddMemoryCache();
 
 var app = builder.Build();
 
@@ -25,5 +31,6 @@ DatabaseManager.InitialiseDatabase();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
+app.UseSession();
 app.MapRazorPages();
 app.Run();

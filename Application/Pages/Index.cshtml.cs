@@ -1,19 +1,13 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-
 namespace Application.Pages;
 
-public class IndexModel : PageModel
-{
-    private readonly ILogger<IndexModel> _logger;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
-    public IndexModel(ILogger<IndexModel> logger)
-    {
-        _logger = logger;
-    }
+public class IndexModel(ILogger<IndexModel> logger) : PageModel
+{
+    private readonly ILogger<IndexModel> _logger = logger;
 
     public void OnGet()
     {
-        
+        Session.Authenticate(HttpContext.Session, Response);
     }
 }

@@ -20,21 +20,6 @@
           "System.Management": "5.0.0"
         }
       },
-      "Htmx": {
-        "type": "Direct",
-        "requested": "[1.6.3, )",
-        "resolved": "1.6.3",
-        "contentHash": "o1KL7iEQpBd3A8DWjaJi567Rk+PQ1VcqbPIjDERLq6Iu7eNaN02aJgLAP5SZOl24t3XSrMw63Hq1ZtwLdrQjRA==",
-        "dependencies": {
-          "System.Text.Json": "6.0.5"
-        }
-      },
-      "Htmx.TagHelpers": {
-        "type": "Direct",
-        "requested": "[1.6.3, )",
-        "resolved": "1.6.3",
-        "contentHash": "LCGiGVC+1UFv4jPSX2hUp705qEWxrAqccETKLkR07J3W8H/5sCGUhQWLa+8Q+OPmswaH7xmU0rTrcmVj+z+KVA=="
-      },
       "Microsoft.Data.Sqlite": {
         "type": "Direct",
         "requested": "[8.0.1, )",

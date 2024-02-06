@@ -9,8 +9,6 @@
 
     <ItemGroup>
       <PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
-      <PackageReference Include="Htmx" Version="1.6.3" />
-      <PackageReference Include="Htmx.TagHelpers" Version="1.6.3" />
       <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.1" />
       <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
       <PackageReference Include="NUnit" Version="4.0.1" />
