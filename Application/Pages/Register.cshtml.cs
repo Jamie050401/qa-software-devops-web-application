@@ -2,9 +2,9 @@
 
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class RegisterModel(ILogger<IndexModel> logger) : PageModel
+public class RegisterModel(ILogger<RegisterModel> logger) : PageModel
 {
-    private readonly ILogger<IndexModel> _logger = logger;
+    private readonly ILogger<RegisterModel> _logger = logger;
 
     public void OnGet()
     {

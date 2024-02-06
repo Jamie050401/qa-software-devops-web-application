@@ -8,7 +8,7 @@ public static class DatabaseManager
     {
         Database.AddFundToDatabase(new Fund(0, "DummyFund", 0.0M, 0.0M));
         Database.AddRoleToDatabase(new Role("DummyRole"));
-        Database.AddUserToDatabase(new User(0, "DummyUsername", "DummyPassword", "DummyRole"));
+        Database.AddUserToDatabase(new User(0, "dummyemail@email.com", "DummyPassword", "DummyRole"));
         Database.AddResultToDatabase(new Result(0, 0, 0.0M, 0.0M));
     }
 

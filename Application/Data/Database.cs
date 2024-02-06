@@ -144,20 +144,20 @@ public class Database
         this.AddToCache($"Role{role.Name}", role);
     }
 
-    public Response<User, Error> GetUserFromDatabase(int? userId = null, string? userName = null)
+    public Response<User, Error> GetUserFromDatabase(int? userId = null, string? userEmail = null)
     {
-        if (userId is null && userName is null)
+        if (userId is null && userEmail is null)
         {
             return Response<User, Error>.BadRequestResponse();
         }
 
-        var userInCache = (User?)this.GetFromCache($"User{userId}") ?? (User?)this.GetFromCache($"User{userName}");
+        var userInCache = (User?)this.GetFromCache($"User{userId}") ?? (User?)this.GetFromCache($"User{userEmail}");
         if (userInCache is not null)
         {
             return Response<User, Error>.OkValueResponse(userInCache);
         }
 
-        var sqlGetFromDatabase = userId is null ? $"SELECT * FROM Users WHERE Username = \"{userName}\";" : $"SELECT * FROM Users WHERE Id = {userId};";
+        var sqlGetFromDatabase = userId is null ? $"SELECT * FROM Users WHERE Email = \"{userEmail}\";" : $"SELECT * FROM Users WHERE Id = {userId};";
         var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
 
         if (!dbResponse.Reader.Read())
@@ -166,33 +166,33 @@ public class Database
         }
 
         var id = dbResponse.Reader.GetInt32(0);
-        var username = dbResponse.Reader.GetString(1);
+        var email = dbResponse.Reader.GetString(1);
         var password = dbResponse.Reader.GetString(2);
         var firstName = dbResponse.Reader.IsDBNull(3) ? null : dbResponse.Reader.GetString(3);
         var lastName = dbResponse.Reader.IsDBNull(4) ? null : dbResponse.Reader.GetString(4);
         var roleName = dbResponse.Reader.GetString(5);
         dbResponse.Dispose();
-        var userInDb = new User(id, username, password, roleName, firstName, lastName);
+        var userInDb = new User(id, email, password, roleName, firstName, lastName);
         this.AddToCache($"User{userInDb.Id}", userInDb);
-        this.AddToCache($"User{userInDb.Username}", userInDb);
+        this.AddToCache($"User{userInDb.Email}", userInDb);
 
         return Response<User, Error>.OkValueResponse(userInDb);
     }
 
-    public void DeleteUserFromDatabase(int? userId = null, string? userName = null)
+    public void DeleteUserFromDatabase(int? userId = null, string? userEmail = null)
     {
-        if (userId is null && userName is null) return;
+        if (userId is null && userEmail is null) return;
 
-        var userInDb = this.GetUserFromDatabase(userId, userName);
+        var userInDb = this.GetUserFromDatabase(userId, userEmail);
 
         if (userInDb.Status == ResponseStatus.Error) return;
 
-        var sqlDeleteFromDatabase = userId is null ? $"DELETE FROM Users WHERE Username = \"{userName}\";" : $"DELETE FROM Users WHERE Id = {userId};";
+        var sqlDeleteFromDatabase = userId is null ? $"DELETE FROM Users WHERE Email = \"{userEmail}\";" : $"DELETE FROM Users WHERE Id = {userId};";
         var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
         if (affected <= 0) return;
         Debug.Assert(userInDb.Value != null, "fundInDb.Value != null");
         this.DeleteFromCache($"User{userInDb.Value.Id}");
-        this.DeleteFromCache($"User{userInDb.Value.Username}");
+        this.DeleteFromCache($"User{userInDb.Value.Email}");
     }
 
     public void AddUserToDatabase(User user)
@@ -203,7 +203,7 @@ public class Database
         {
             sqlAddToDatabase = $"""
                 UPDATE Users
-                SET Username = "{user.Username}",
+                SET Email = "{user.Email}",
                     Password = "{user.Password}",
                     FirstName = "{user.FirstName}",
                     LastName = "{user.LastName}",
@@ -214,14 +214,14 @@ public class Database
         else
         {
             sqlAddToDatabase = $"""
-                INSERT INTO Users (Id, Username, Password, FirstName, LastName, RoleName)
-                VALUES ({user.Id}, "{user.Username}", "{user.Password}", "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
+                INSERT INTO Users (Id, Email, Password, FirstName, LastName, RoleName)
+                VALUES ({user.Id}, "{user.Email}", "{user.Password}", "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
             """;
         }
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
         if (affected <= 0) return;
         this.AddToCache($"User{user.Id}", user);
-        this.AddToCache($"User{user.Username}", user);
+        this.AddToCache($"User{user.Email}", user);
     }
 
     public Response<Result, Error> GetResultFromDatabase(int resultId)
@@ -307,14 +307,14 @@ public class Database
            
             CREATE TABLE IF NOT EXISTS Users (
                 Id INTEGER PRIMARY KEY NOT NULL,
-                Username TEXT NOT NULL,
+                Email TEXT NOT NULL,
                 Password TEXT NOT NULL,
                 FirstName TEXT,
                 LastName TEXT,
                 RoleName TEXT NOT NULL REFERENCES Roles(Name) ON DELETE NO ACTION
             );
 
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_Username ON Users(Username);
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_Email ON Users(Email);
             
             CREATE TABLE IF NOT EXISTS Results (
                 Id INTEGER PRIMARY KEY NOT NULL,

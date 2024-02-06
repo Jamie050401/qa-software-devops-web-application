@@ -5,14 +5,6 @@
     ViewData["Title"] = "Dashboard";
 }
 
-@section Header {
-    @await Html.PartialAsync("_Navigation", Model.NavigationModel);
-}
-
-@section Footer {
-    @await Html.PartialAsync("_Footer", Model.FooterModel);
-}
-
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
