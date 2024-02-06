@@ -11,7 +11,7 @@ public class LoginModel(ILogger<LoginModel> logger) : PageModel
 
     public void OnGet()
     {
-
+        Session.Redirect(HttpContext.Session, Response);
     }
 
     public void OnPost()

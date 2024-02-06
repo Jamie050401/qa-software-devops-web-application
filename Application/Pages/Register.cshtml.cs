@@ -8,6 +8,6 @@ public class RegisterModel(ILogger<RegisterModel> logger) : PageModel
 
     public void OnGet()
     {
-
+        Session.Redirect(HttpContext.Session, Response);
     }
 }

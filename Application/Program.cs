@@ -3,7 +3,10 @@ using Application.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 builder
-    .Services.AddRazorPages()
+    .Services.AddRazorPages(options =>
+    {
+        options.Conventions.AddPageRoute("/Dashboard", "/");
+    })
     .Services.AddHsts(options =>
     {
         options.Preload = true;

@@ -2,9 +2,9 @@ namespace Application.Pages;
 
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class IndexModel(ILogger<IndexModel> logger) : PageModel
+public class DashboardModel(ILogger<DashboardModel> logger) : PageModel
 {
-    private readonly ILogger<IndexModel> _logger = logger;
+    private readonly ILogger<DashboardModel> _logger = logger;
 
     public void OnGet()
     {
