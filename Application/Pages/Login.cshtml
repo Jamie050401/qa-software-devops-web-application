@@ -1,0 +1,35 @@
+﻿@page
+@model LoginModel
+
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="container-fluid text-center d-flex flex-nowrap" style="width: 30%; height:100vh;">
+    <div class="form-signin w-100 m-auto">
+        <form method="POST">
+            <!-- TODO - Add icon here -->
+            <h1 class="h3 mb-3 fw-normal">Please sign-in</h1>
+        
+            <div class="form-floating">
+                <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com">
+                <label for="email">Email address</label>
+            </div>
+            <div class="form-floating">
+                <input type="password" class="form-control" id="password" name="password" placeholder="Password">
+                <label for="password">Password</label>
+            </div>
+        
+            <div class="checkbox mb-3">
+                <label>
+                    <input type="checkbox" value="remember-me"> Remember me
+                </label>
+            </div>
+            
+            <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
+            <hr class="my-4">
+            <p><small class="text-muted">Don't have an account?</small></p>
+            <p><button type="button" class="btn btn-link btn-sm" onclick="window.location.href='/Register'">Click here to sign-up.</button></p>
+        </form>
+    </div>
+</div>

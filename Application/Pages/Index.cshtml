@@ -1,7 +1,12 @@
 ﻿@page
 @model IndexModel
+
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Dashboard";
+}
+
+@section Header {
+    @await Html.PartialAsync("Navigation", Model.NavigationModel);
 }
 
 <div class="text-center">
