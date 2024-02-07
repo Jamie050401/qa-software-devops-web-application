@@ -170,9 +170,10 @@ public class Database
         var email = dbResponse.Reader.GetString(1);
         var password = dbResponse.Reader.GetString(2);
         var token = dbResponse.Reader.IsDBNull(3) ? null : dbResponse.Reader.GetString(3);
-        var firstName = dbResponse.Reader.IsDBNull(4) ? null : dbResponse.Reader.GetString(4);
-        var lastName = dbResponse.Reader.IsDBNull(5) ? null : dbResponse.Reader.GetString(5);
-        var roleName = dbResponse.Reader.GetString(6);
+        var tokenSource = dbResponse.Reader.IsDBNull(4) ? null : dbResponse.Reader.GetString(4);
+        var firstName = dbResponse.Reader.IsDBNull(5) ? null : dbResponse.Reader.GetString(5);
+        var lastName = dbResponse.Reader.IsDBNull(6) ? null : dbResponse.Reader.GetString(6);
+        var roleName = dbResponse.Reader.GetString(7);
         dbResponse.Dispose();
         var userInDb = new User
         {
@@ -180,6 +181,7 @@ public class Database
             Email = email,
             Password = password,
             Token = token,
+            TokenSource = tokenSource,
             FirstName = firstName,
             LastName = lastName,
             RoleName = roleName
@@ -217,6 +219,7 @@ public class Database
                 SET Email = "{user.Email}",
                     Password = "{user.Password}",
                     Token = "{user.Token}",
+                    TokenSource = "{user.TokenSource}",
                     FirstName = "{user.FirstName}",
                     LastName = "{user.LastName}",
                     RoleName = "{user.RoleName}"
@@ -226,8 +229,8 @@ public class Database
         else
         {
             sqlAddToDatabase = $"""
-                INSERT INTO Users (Id, Email, Password, Token, FirstName, LastName, RoleName)
-                VALUES ({user.Id}, "{user.Email}", "{user.Password}", "{user.Token}", "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
+                INSERT INTO Users (Id, Email, Password, Token, TokenSource, FirstName, LastName, RoleName)
+                VALUES ({user.Id}, "{user.Email}", "{user.Password}", "{user.Token}", "{user.TokenSource}", "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
             """;
         }
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
@@ -322,6 +325,7 @@ public class Database
                 Email TEXT NOT NULL,
                 Password TEXT NOT NULL,
                 Token TEXT,
+                TokenSource TEXT,
                 FirstName TEXT,
                 LastName TEXT,
                 RoleName TEXT NOT NULL REFERENCES Roles(Name) ON DELETE NO ACTION

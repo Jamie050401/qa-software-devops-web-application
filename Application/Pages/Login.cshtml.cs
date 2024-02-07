@@ -54,16 +54,17 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
             if (!authenticationData.ContainsKey("Token"))
             {
                 var token = SecretHasher.Hash(Password.Generate());
+                var tokenSource = (HttpContext.Connection.RemoteIpAddress ?? IPAddress.Loopback).ToString();
                 authenticationData.Add("Token", token);
-                authenticationData.Add("Source", (HttpContext.Connection.RemoteIpAddress ?? IPAddress.None).ToString());
+                authenticationData.Add("Source", tokenSource);
                 Cookie.Store(Response, "QAWA-AuthenticationData", authenticationData, true);
 
                 userInDb.Token = token;
+                userInDb.TokenSource = tokenSource;
                 DatabaseManager.Database.AddUserToDatabase(userInDb);
             }
         }
 
-        notyf.Success("Logged in successfully.");
         Session.Login(HttpContext.Session, Response);
     }
 }
