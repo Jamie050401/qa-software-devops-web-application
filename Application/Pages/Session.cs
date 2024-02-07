@@ -4,10 +4,8 @@ public static class Session
 {
     public static void Authenticate(ISession session, HttpResponse response)
     {
-        var isLoggedIn = session.TryGetValue("IsLoggedIn", out var isAuthenticated) &&
-                         BitConverter.ToBoolean(isAuthenticated);
-        var hasLoggedIn = session.TryGetValue("HasLoggedIn", out var hasLogged) &&
-                          BitConverter.ToBoolean(hasLogged);
+        var isLoggedIn = session.TryGetValue("IsLoggedIn", out var isAuthenticated) && BitConverter.ToBoolean(isAuthenticated);
+        var hasLoggedIn = session.TryGetValue("HasLoggedIn", out var hasLogged) && BitConverter.ToBoolean(hasLogged);
 
         if (isLoggedIn) return;
         if (hasLoggedIn) response.Redirect("/Login", true);
@@ -16,8 +14,7 @@ public static class Session
 
     public static void Redirect(ISession session, HttpResponse response)
     {
-        var isLoggedIn = session.TryGetValue("IsLoggedIn", out var isAuthenticated) &&
-                         BitConverter.ToBoolean(isAuthenticated);
+        var isLoggedIn = session.TryGetValue("IsLoggedIn", out var isAuthenticated) && BitConverter.ToBoolean(isAuthenticated);
 
         if (!isLoggedIn) return;
         response.Redirect("/Dashboard", true);

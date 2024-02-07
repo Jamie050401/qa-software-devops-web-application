@@ -27,25 +27,25 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
             return;
         }
 
-        var hashedPassword = password; // TODO - Need to hash user entered password to match against database value
         var dbResponse = DatabaseManager.Database.GetUserFromDatabase(userEmail: email);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
             notyf.Error("Email or password was incorrect, please try again.");
-            logger.Information($"Login Failure: {email} not found in database");
+            logger.Information($"Login failure: {email} not found in database.");
             return;
         }
 
         Debug.Assert(dbResponse.Value != null, "dbResponse.Value != null");
-        if (email != dbResponse.Value.Email || hashedPassword != dbResponse.Value.Password)
+        if (email != dbResponse.Value.Email || !SecretHasher.Verify(password, dbResponse.Value.Password))
         {
             notyf.Error("Email or password was incorrect, please try again.");
-            logger.Information($"Login Failure: {hashedPassword} does not match stored password hash");
+            logger.Information($"Login failure: supplied password does not match stored password hash.");
             return;
         }
 
         // TODO - Implement remember me functionality
 
+        notyf.Success("Logged in successfully.");
         Session.Login(HttpContext.Session, Response);
     }
 }
