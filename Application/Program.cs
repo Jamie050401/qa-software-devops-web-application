@@ -1,11 +1,15 @@
 using Application.Data;
+using AspNetCoreHero.ToastNotification;
+using AspNetCoreHero.ToastNotification.Extensions;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder
     .Services.AddRazorPages(options =>
     {
-        options.Conventions.AddPageRoute("/Dashboard", "/");
+        // NOTE: For some reason enabling this route causes the dashboard button in the nav bar to route to /Register
+        //options.Conventions.AddPageRoute("/Dashboard", "/");
     })
     .Services.AddHsts(options =>
     {
@@ -15,10 +19,19 @@ builder
     })
     .AddSession(options =>
     {
-        options.Cookie.Name = "QAWebApplication";
         options.IdleTimeout = TimeSpan.FromMinutes(30);
     })
-    .AddMemoryCache();
+    .AddMemoryCache()
+    .AddSerilog(options =>
+    {
+        options.WriteTo.Console();
+    })
+    .AddNotyf(options =>
+    {
+        options.DurationInSeconds = 3;
+        options.IsDismissable = true;
+        options.Position = NotyfPosition.BottomRight;
+    });
 
 var app = builder.Build();
 
@@ -33,7 +46,8 @@ DatabaseManager.InitialiseDatabase();
 
 app.UseStaticFiles();
 app.UseRouting();
-app.UseAuthorization();
 app.UseSession();
+app.UseSerilogRequestLogging();
+app.UseNotyf();
 app.MapRazorPages();
 app.Run();

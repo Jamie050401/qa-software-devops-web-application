@@ -1,11 +1,13 @@
 ﻿namespace Application.Models;
 
-public class User(int id, string email, string password, string roleName, string? firstName = null, string? lastName = null)
+public class User()
 {
-    public int Id { get; } = id;
-    public string Email { get; } = email;
-    public string Password { get; } = password;
-    public string? FirstName { get; } = firstName;
-    public string? LastName { get; } = lastName;
-    public string RoleName { get; } = roleName;
+    public int Id { get; init; }
+    public required string Email { get; init; }
+    public required string Password { get; init; }
+    public string? Token { get; set; }
+    public string? TokenSource { get; set; }
+    public string? FirstName { get; init; }
+    public string? LastName { get; init; }
+    public required string RoleName { get; init; }
 }

@@ -1,11 +1,11 @@
 ﻿namespace Application.Pages;
 
+using Common;
+using ILogger = Serilog.ILogger;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class PrivacyModel(ILogger<PrivacyModel> logger) : PageModel
+public class PrivacyModel(ILogger logger) : PageModel
 {
-    private readonly ILogger<PrivacyModel> _logger = logger;
-
     public void OnGet()
     {
         Session.Authenticate(HttpContext.Session, Response);
