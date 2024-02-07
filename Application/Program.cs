@@ -18,7 +18,6 @@ builder
     })
     .AddSession(options =>
     {
-        options.Cookie.Name = "QAWebApplication";
         options.IdleTimeout = TimeSpan.FromMinutes(30);
     })
     .AddMemoryCache()

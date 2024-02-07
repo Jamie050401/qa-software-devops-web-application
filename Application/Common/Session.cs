@@ -1,4 +1,4 @@
-﻿namespace Application.Pages;
+﻿namespace Application.Common;
 
 public static class Session
 {

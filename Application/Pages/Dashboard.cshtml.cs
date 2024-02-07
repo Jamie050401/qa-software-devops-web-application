@@ -1,5 +1,6 @@
 namespace Application.Pages;
 
+using Common;
 using ILogger = Serilog.ILogger;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 

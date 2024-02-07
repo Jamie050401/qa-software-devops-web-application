@@ -1,10 +1,11 @@
-﻿namespace Application.Data;
+﻿using System.Diagnostics;
+
+namespace Application.Data;
 
 using Common;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Caching.Memory;
 using Models;
-using System.Diagnostics;
 
 public class Database
 {
@@ -151,7 +152,7 @@ public class Database
             return Response<User, Error>.BadRequestResponse();
         }
 
-        var userInCache = (User?)this.GetFromCache($"User{userId}") ?? (User?)this.GetFromCache($"User{userEmail}");
+        var userInCache = (User?)(this.GetFromCache($"User{userId}") ?? this.GetFromCache($"User{userEmail}"));
         if (userInCache is not null)
         {
             return Response<User, Error>.OkValueResponse(userInCache);
@@ -168,11 +169,21 @@ public class Database
         var id = dbResponse.Reader.GetInt32(0);
         var email = dbResponse.Reader.GetString(1);
         var password = dbResponse.Reader.GetString(2);
-        var firstName = dbResponse.Reader.IsDBNull(3) ? null : dbResponse.Reader.GetString(3);
-        var lastName = dbResponse.Reader.IsDBNull(4) ? null : dbResponse.Reader.GetString(4);
-        var roleName = dbResponse.Reader.GetString(5);
+        var token = dbResponse.Reader.IsDBNull(3) ? null : dbResponse.Reader.GetString(3);
+        var firstName = dbResponse.Reader.IsDBNull(4) ? null : dbResponse.Reader.GetString(4);
+        var lastName = dbResponse.Reader.IsDBNull(5) ? null : dbResponse.Reader.GetString(5);
+        var roleName = dbResponse.Reader.GetString(6);
         dbResponse.Dispose();
-        var userInDb = new User(id, email, password, roleName, firstName, lastName);
+        var userInDb = new User
+        {
+            Id = id,
+            Email = email,
+            Password = password,
+            Token = token,
+            FirstName = firstName,
+            LastName = lastName,
+            RoleName = roleName
+        };
         this.AddToCache($"User{userInDb.Id}", userInDb);
         this.AddToCache($"User{userInDb.Email}", userInDb);
 
@@ -190,7 +201,7 @@ public class Database
         var sqlDeleteFromDatabase = userId is null ? $"DELETE FROM Users WHERE Email = \"{userEmail}\";" : $"DELETE FROM Users WHERE Id = {userId};";
         var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
         if (affected <= 0) return;
-        Debug.Assert(userInDb.Value != null, "fundInDb.Value != null");
+        Debug.Assert(userInDb.Value != null, "userInDb.Value != null");
         this.DeleteFromCache($"User{userInDb.Value.Id}");
         this.DeleteFromCache($"User{userInDb.Value.Email}");
     }
@@ -205,6 +216,7 @@ public class Database
                 UPDATE Users
                 SET Email = "{user.Email}",
                     Password = "{user.Password}",
+                    Token = "{user.Token}",
                     FirstName = "{user.FirstName}",
                     LastName = "{user.LastName}",
                     RoleName = "{user.RoleName}"
@@ -214,8 +226,8 @@ public class Database
         else
         {
             sqlAddToDatabase = $"""
-                INSERT INTO Users (Id, Email, Password, FirstName, LastName, RoleName)
-                VALUES ({user.Id}, "{user.Email}", "{user.Password}", "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
+                INSERT INTO Users (Id, Email, Password, Token, FirstName, LastName, RoleName)
+                VALUES ({user.Id}, "{user.Email}", "{user.Password}", "{user.Token}", "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
             """;
         }
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
@@ -309,6 +321,7 @@ public class Database
                 Id INTEGER PRIMARY KEY NOT NULL,
                 Email TEXT NOT NULL,
                 Password TEXT NOT NULL,
+                Token TEXT,
                 FirstName TEXT,
                 LastName TEXT,
                 RoleName TEXT NOT NULL REFERENCES Roles(Name) ON DELETE NO ACTION
