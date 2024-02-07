@@ -12,7 +12,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
     public void OnGet()
     {
         Session.Redirect(HttpContext.Session, Response);
-        Session.Authenticate(HttpContext.Session, Request, Response);
+        Session.Login(HttpContext.Session, Request, Response);
     }
 
     public void OnPost()
