@@ -377,6 +377,6 @@ public class Database
     private MemoryCache Cache { get; } = new(new MemoryCacheOptions());
     private MemoryCacheEntryOptions CacheEntryOptions { get; } = new()
     {
-        SlidingExpiration = TimeSpan.FromHours(1)
+        SlidingExpiration = TimeSpan.FromMinutes(30)
     };
 }

@@ -1,11 +1,10 @@
 namespace Application.Pages;
 
+using ILogger = Serilog.ILogger;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class DashboardModel(ILogger<DashboardModel> logger) : PageModel
+public class DashboardModel(ILogger logger) : PageModel
 {
-    private readonly ILogger<DashboardModel> _logger = logger;
-
     public void OnGet()
     {
         Session.Authenticate(HttpContext.Session, Response);

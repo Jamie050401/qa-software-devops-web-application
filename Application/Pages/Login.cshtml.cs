@@ -3,10 +3,11 @@
 using AspNetCoreHero.ToastNotification.Abstractions;
 using Common;
 using Data;
+using ILogger = Serilog.ILogger;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Diagnostics;
 
-public class LoginModel(ILogger<LoginModel> logger, INotyfService notyf) : PageModel
+public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
 {
     public void OnGet()
     {
@@ -31,7 +32,7 @@ public class LoginModel(ILogger<LoginModel> logger, INotyfService notyf) : PageM
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
             notyf.Error("Email or password was incorrect, please try again.");
-            // TODO - Log failed login attempt (invalid email)
+            logger.Information($"Login Failure: {email} not found in database");
             return;
         }
 
@@ -39,7 +40,7 @@ public class LoginModel(ILogger<LoginModel> logger, INotyfService notyf) : PageM
         if (email != dbResponse.Value.Email || hashedPassword != dbResponse.Value.Password)
         {
             notyf.Error("Email or password was incorrect, please try again.");
-            // TODO - Log failed login attempt (invalid password)
+            logger.Information($"Login Failure: {hashedPassword} does not match stored password hash");
             return;
         }
 
