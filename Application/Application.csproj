@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="AspNetCoreHero.ToastNotification" Version="1.1.0" />
       <PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
       <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.1" />
       <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />

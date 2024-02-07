@@ -1,4 +1,6 @@
 using Application.Data;
+using AspNetCoreHero.ToastNotification;
+using AspNetCoreHero.ToastNotification.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +20,13 @@ builder
         options.Cookie.Name = "QAWebApplication";
         options.IdleTimeout = TimeSpan.FromMinutes(30);
     })
-    .AddMemoryCache();
+    .AddMemoryCache()
+    .AddNotyf(options =>
+    {
+        options.DurationInSeconds = 3;
+        options.IsDismissable = true;
+        options.Position = NotyfPosition.BottomRight;
+    });
 
 var app = builder.Build();
 
@@ -33,7 +41,7 @@ DatabaseManager.InitialiseDatabase();
 
 app.UseStaticFiles();
 app.UseRouting();
-app.UseAuthorization();
 app.UseSession();
+app.UseNotyf();
 app.MapRazorPages();
 app.Run();

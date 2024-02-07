@@ -1,14 +1,13 @@
 ﻿namespace Application.Pages;
 
+using AspNetCoreHero.ToastNotification.Abstractions;
 using Common;
 using Data;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Diagnostics;
 
-public class LoginModel(ILogger<LoginModel> logger) : PageModel
+public class LoginModel(ILogger<LoginModel> logger, INotyfService notyf) : PageModel
 {
-    private readonly ILogger<LoginModel> _logger = logger;
-
     public void OnGet()
     {
         Session.Redirect(HttpContext.Session, Response);
@@ -18,24 +17,33 @@ public class LoginModel(ILogger<LoginModel> logger) : PageModel
     {
         var email = Request.Form["email"].ToString();
         var password = Request.Form["password"].ToString();
-        var hasRememberMe = bool.TryParse(Request.Form["remember-me"].ToString(), out var isRemembered) &&
-                            isRemembered; // TODO - Implement remember me functionality
+        var hasRememberMe = bool.TryParse(Request.Form["remember-me"].ToString(), out var isRemembered) && isRemembered;
 
-        // TODO - Validate the above ...
+        var isEmailValid = Validate.Email(email);
+        if (!isEmailValid)
+        {
+            notyf.Error("Please make sure to enter a valid email address.");
+            return;
+        }
 
+        var hashedPassword = password; // TODO - Need to hash user entered password to match against database value
         var dbResponse = DatabaseManager.Database.GetUserFromDatabase(userEmail: email);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
-            // TODO - Display some kind of error for the user (and log)
+            notyf.Error("Email or password was incorrect, please try again.");
+            // TODO - Log failed login attempt (invalid email)
             return;
         }
 
         Debug.Assert(dbResponse.Value != null, "dbResponse.Value != null");
-        if (email != dbResponse.Value.Email || password != dbResponse.Value.Password)
+        if (email != dbResponse.Value.Email || hashedPassword != dbResponse.Value.Password)
         {
-            // TODO - Display some kind of error for the user (and log)
+            notyf.Error("Email or password was incorrect, please try again.");
+            // TODO - Log failed login attempt (invalid password)
             return;
         }
+
+        // TODO - Implement remember me functionality
 
         Session.Login(HttpContext.Session, Response);
     }

@@ -20,7 +20,7 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1"> <!-- Hide the current page from list -->
+                    <ul class="navbar-nav flex-grow-1">
                         @if (!ReferenceEquals(ViewData["Title"], "Dashboard"))
                         {
                             <li class="nav-item">
@@ -54,7 +54,7 @@
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script src="~/js/site.js" asp-append-version="true"></script>
-
+@await Component.InvokeAsync("Notyf")
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
