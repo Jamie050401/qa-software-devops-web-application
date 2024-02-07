@@ -1,21 +1,18 @@
 ﻿namespace Application.Pages;
 
 using AspNetCoreHero.ToastNotification.Abstractions;
-using Cookie = Common.Cookie;
 using Common;
 using Data;
 using ILogger = Serilog.ILogger;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Diagnostics;
-using System.Net;
 
 public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
 {
     public void OnGet()
     {
         Session.Redirect(HttpContext.Session, Response);
-
-        // TODO - Implement logic to log in automatically if relevant cookie has valid data
+        Session.Authenticate(HttpContext.Session, Request, Response);
     }
 
     public void OnPost()
@@ -51,10 +48,13 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         if (hasRememberMe)
         {
             var authenticationData = Cookie.Retrieve(Request, "QAWA-AuthenticationData");
-            if (!authenticationData.ContainsKey("Token"))
+            if (!authenticationData.ContainsKey("Email"))
             {
                 var token = SecretHasher.Hash(Password.Generate());
-                var tokenSource = (HttpContext.Connection.RemoteIpAddress ?? IPAddress.Loopback).ToString();
+                var tokenSource = HttpContext.Connection.RemoteIpAddress is null
+                    ? ""
+                    : HttpContext.Connection.RemoteIpAddress.ToString();
+                authenticationData.Add("Email", email);
                 authenticationData.Add("Token", token);
                 authenticationData.Add("Source", tokenSource);
                 Cookie.Store(Response, "QAWA-AuthenticationData", authenticationData, true);

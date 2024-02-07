@@ -1,5 +1,8 @@
 ﻿namespace Application.Common;
 
+using Data;
+using System.Diagnostics;
+
 public static class Session
 {
     public static bool GetBoolean(ISession session, string key)
@@ -10,6 +13,22 @@ public static class Session
     public static void SetBoolean(ISession session, string key, bool value)
     {
         session.Set(key, BitConverter.GetBytes(value));
+    }
+
+    public static void Authenticate(ISession session, HttpRequest request, HttpResponse response)
+    {
+        var authenticationData = Cookie.Retrieve(request, "QAWA-AuthenticationData");
+        if (!authenticationData.TryGetValue("Email", out var email) ||
+            !authenticationData.TryGetValue("Token", out var token) ||
+            !authenticationData.TryGetValue("Source", out var source)) return;
+        var userInDb = DatabaseManager.Database.GetUserFromDatabase(userEmail: (string)email);
+        if (userInDb.Status is ResponseStatus.Error || !userInDb.HasValue) return;
+        Debug.Assert(userInDb.Value != null, "userInDb.Value != null");
+        var isAuthenticated = (string)token == userInDb.Value.Token && (string)source == userInDb.Value.TokenSource;
+        SetBoolean(session, "IsLoggedIn", isAuthenticated);
+        SetBoolean(session, "HasLoggedIn", isAuthenticated);
+        SetBoolean(session, "IsFirstDashboardVisit", isAuthenticated);
+        if (isAuthenticated) response.Redirect("/Dashboard", true);
     }
 
     public static void Authenticate(ISession session, HttpResponse response)

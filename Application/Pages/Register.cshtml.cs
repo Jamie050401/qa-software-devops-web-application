@@ -9,7 +9,6 @@ public class RegisterModel(ILogger logger) : PageModel
     public void OnGet()
     {
         Session.Redirect(HttpContext.Session, Response);
-
-        // TODO - Implement logic to log in automatically if relevant cookie has valid data
+        Session.Authenticate(HttpContext.Session, Request, Response);
     }
 }

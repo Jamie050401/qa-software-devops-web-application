@@ -1,7 +1,8 @@
 ﻿namespace Application.Common;
 
-using System.Text.Json;
+using Newtonsoft.Json;
 
+// TODO - Implement some kind of encoding for cookies (since they are stored in plain text)
 public static class Cookie
 {
     private static readonly CookieOptions CookieOptions = new()
@@ -17,7 +18,7 @@ public static class Cookie
         var cookieOptions = CookieOptions;
         cookieOptions.IsEssential = isEssential;
 
-        response.Cookies.Append(key, JsonSerializer.Serialize(dictionary), cookieOptions);
+        response.Cookies.Append(key, JsonConvert.SerializeObject(dictionary), cookieOptions);
     }
 
     public static IDictionary<string, object> Retrieve(HttpRequest request, string key)
@@ -26,6 +27,6 @@ public static class Cookie
 
         if (cookie is null) return new Dictionary<string, object>();
 
-        return JsonSerializer.Deserialize<IDictionary<string, object>>(cookie) ?? new Dictionary<string, object>();
+        return JsonConvert.DeserializeObject<IDictionary<string, object>>(cookie) ?? new Dictionary<string, object>();
     }
 }

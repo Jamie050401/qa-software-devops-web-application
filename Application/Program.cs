@@ -8,7 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder
     .Services.AddRazorPages(options =>
     {
-        options.Conventions.AddPageRoute("/Dashboard", "/");
+        // NOTE: For some reason enabling this route causes the dashboard button in the nav bar to route to /Register
+        //options.Conventions.AddPageRoute("/Dashboard", "/");
     })
     .Services.AddHsts(options =>
     {
