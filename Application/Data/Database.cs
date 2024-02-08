@@ -245,7 +245,7 @@ public class Database
         {
             sqlAddToDatabase = $"""
                 INSERT INTO Users (Id, Email, Password, AuthenticationData, FirstName, LastName, RoleName)
-                VALUES ({user.Id}, "{user.Email}", "{user.Password}", "{JsonConvert.SerializeObject(user.AuthenticationData)}", "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
+                VALUES ({user.Id}, "{user.Email}", "{user.Password}", json_set('{JsonConvert.SerializeObject(user.AuthenticationData)}'), "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
             """;
         }
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
