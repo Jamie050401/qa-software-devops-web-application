@@ -2,7 +2,7 @@
 
 using Newtonsoft.Json;
 
-// TODO - Implement some kind of encoding for cookies (since they are stored in plain text)
+// TODO - Implement some kind of encoding for cookies (since they are stored in plain text - would also prevent HTTP listeners)
 public static class Cookie
 {
     private static readonly CookieOptions CookieOptions = new()

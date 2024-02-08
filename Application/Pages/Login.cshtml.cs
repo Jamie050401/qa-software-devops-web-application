@@ -61,6 +61,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         Session.Login(HttpContext.Session, Response);
     }
 
+    // TODO - Set 'Expires' via parameter such that the user can decide how long to be remembered for i.e. from 1 day up to 90 days
     private void UpdateAuthenticationDataCookie(string email, User userInDb)
     {
         var authenticationData = new AuthenticationData

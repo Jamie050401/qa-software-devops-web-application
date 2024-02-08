@@ -9,6 +9,7 @@ builder
     .Services.AddRazorPages(options =>
     {
         // NOTE: For some reason enabling this route causes the dashboard button in the nav bar to route to /Register
+        //       No idea what causes this but I refuse to waste any more time trying to understand it - absolutely maddening.
         //options.Conventions.AddPageRoute("/Dashboard", "/");
     })
     .Services.AddHsts(options =>

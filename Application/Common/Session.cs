@@ -34,6 +34,8 @@ public static class Session
         response.Redirect("/Dashboard", true);
     }
 
+    // TODO - Implement logic to regenerate the token everytime it is used?
+    // TODO - Implement support for users to have multiple valid tokens (i.e. for different locations or devices)
     public static void Login(ILogger logger, ISession session, HttpRequest request, HttpResponse response)
     {
         var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, "QAWA-AuthenticationData");
