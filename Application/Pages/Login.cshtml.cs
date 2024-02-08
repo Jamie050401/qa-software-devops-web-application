@@ -5,6 +5,7 @@ using Common;
 using Data;
 using ILogger = Serilog.ILogger;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Models;
 using System.Diagnostics;
 
 public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
@@ -12,7 +13,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
     public void OnGet()
     {
         Session.Redirect(HttpContext.Session, Response);
-        Session.Login(HttpContext.Session, Request, Response);
+        Session.Login(logger, HttpContext.Session, Request, Response);
     }
 
     public void OnPost()
@@ -47,24 +48,34 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
 
         if (hasRememberMe)
         {
-            var authenticationData = Cookie.Retrieve(Request, "QAWA-AuthenticationData");
-            if (!authenticationData.ContainsKey("Email"))
+            var cookieResponse = Cookie.Retrieve<AuthenticationData>(Request, "QAWA-AuthenticationData");
+            if (cookieResponse.Status is ResponseStatus.Success)
             {
-                var token = SecretHasher.Hash(Password.Generate());
-                var tokenSource = HttpContext.Connection.RemoteIpAddress is null
-                    ? ""
-                    : HttpContext.Connection.RemoteIpAddress.ToString();
-                authenticationData.Add("Email", email);
-                authenticationData.Add("Token", token);
-                authenticationData.Add("Source", tokenSource);
-                Cookie.Store(Response, "QAWA-AuthenticationData", authenticationData, true);
-
-                userInDb.Token = token;
-                userInDb.TokenSource = tokenSource;
-                DatabaseManager.Database.AddUserToDatabase(userInDb);
+                if (!cookieResponse.HasValue)
+                {
+                    this.UpdateAuthenticationDataCookie(email, userInDb);
+                }
             }
         }
 
         Session.Login(HttpContext.Session, Response);
+    }
+
+    private void UpdateAuthenticationDataCookie(string email, User userInDb)
+    {
+        var authenticationData = new AuthenticationData
+        {
+            Email = email,
+            Token = SecretHasher.Hash(Password.Generate()),
+            Source = HttpContext.Connection.RemoteIpAddress is null
+                ? ""
+                : HttpContext.Connection.RemoteIpAddress.ToString(),
+            Timestamp = DateTime.UtcNow,
+            Expires = DateTimeOffset.UtcNow.AddDays(3)
+        };
+        Cookie.Store(Response, "QAWA-AuthenticationData", authenticationData, true, authenticationData.Expires);
+
+        userInDb.AuthenticationData = authenticationData;
+        DatabaseManager.Database.AddUserToDatabase(userInDb);
     }
 }

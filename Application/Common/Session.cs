@@ -1,6 +1,7 @@
 ﻿namespace Application.Common;
 
 using Data;
+using ILogger = Serilog.ILogger;
 using System.Diagnostics;
 
 public static class Session
@@ -33,16 +34,30 @@ public static class Session
         response.Redirect("/Dashboard", true);
     }
 
-    public static void Login(ISession session, HttpRequest request, HttpResponse response)
+    public static void Login(ILogger logger, ISession session, HttpRequest request, HttpResponse response)
     {
-        var authenticationData = Cookie.Retrieve(request, "QAWA-AuthenticationData");
-        if (!authenticationData.TryGetValue("Email", out var email) ||
-            !authenticationData.TryGetValue("Token", out var token) ||
-            !authenticationData.TryGetValue("Source", out var source)) return;
-        var userInDb = DatabaseManager.Database.GetUserFromDatabase(userEmail: (string)email);
-        if (userInDb.Status is ResponseStatus.Error || !userInDb.HasValue) return;
-        Debug.Assert(userInDb.Value != null, "userInDb.Value != null");
-        var isAuthenticated = (string)token == userInDb.Value.Token && (string)source == userInDb.Value.TokenSource;
+        var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, "QAWA-AuthenticationData");
+        if (cookieResponse.Status is ResponseStatus.Error || !cookieResponse.HasValue)
+        {
+            logger.Information($"Login failure: unable to retrieve authentication data from cookies");
+            return;
+        }
+        Debug.Assert(cookieResponse.Value != null, "cookieResponse.Value != null");
+        var authenticationData = cookieResponse.Value;
+        var dbResponse = DatabaseManager.Database.GetUserFromDatabase(userEmail: authenticationData.Email);
+        if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
+        {
+            logger.Information($"Login failure: unable to find user matching authentication data stored in cookies");
+            return;
+        }
+        Debug.Assert(dbResponse.Value != null, "databaseResponse.Value != null");
+        var userInDb = dbResponse.Value;
+        var isAuthenticated = userInDb.AuthenticationData is not null &&
+                              authenticationData.Token == userInDb.AuthenticationData.Token &&
+                              authenticationData.Source == userInDb.AuthenticationData.Source &&
+                              authenticationData.Timestamp == userInDb.AuthenticationData.Timestamp &&
+                              authenticationData.Expires == userInDb.AuthenticationData.Expires &&
+                              DateTime.UtcNow < authenticationData.Expires.DateTime;
         SetBoolean(session, "IsLoggedIn", isAuthenticated);
         SetBoolean(session, "HasLoggedIn", isAuthenticated);
         SetBoolean(session, "IsFirstDashboardVisit", isAuthenticated);
@@ -59,11 +74,7 @@ public static class Session
 
     public static void Logout(ISession session, HttpRequest request, HttpResponse response)
     {
-        var authenticationData = Cookie.Retrieve(request, "QAWA-AuthenticationData");
-        authenticationData.Remove("Email");
-        authenticationData.Remove("Token");
-        authenticationData.Remove("Source");
-        Cookie.Store(response, "QAWA-AuthenticationData", authenticationData, true);
+        Cookie.Remove(response, "QAWA-AuthenticationData");
 
         SetBoolean(session, "IsLoggedIn", false);
         response.Redirect("/Login", true);

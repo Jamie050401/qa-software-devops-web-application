@@ -9,6 +9,6 @@ public class RegisterModel(ILogger logger) : PageModel
     public void OnGet()
     {
         Session.Redirect(HttpContext.Session, Response);
-        Session.Login(HttpContext.Session, Request, Response);
+        Session.Login(logger, HttpContext.Session, Request, Response);
     }
 }

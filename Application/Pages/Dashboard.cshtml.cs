@@ -18,4 +18,9 @@ public class DashboardModel(ILogger logger, INotyfService notyf) : PageModel
             Session.SetBoolean(HttpContext.Session, "IsFirstDashboardVisit", false);
         }
     }
+
+    public void OnPostLogout()
+    {
+        Session.Logout(HttpContext.Session, Request, Response);
+    }
 }
