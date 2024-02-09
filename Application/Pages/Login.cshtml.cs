@@ -17,8 +17,11 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
             notyf.Success("Logged out successfully.");
             Session.SetBoolean(HttpContext.Session, "IsLogout", false);
         }
-        Session.Redirect(HttpContext.Session, Response);
-        Session.Login(logger, HttpContext.Session, Request, Response);
+
+        if (!Session.Redirect(HttpContext.Session, Request, Response))
+        {
+            Session.Login(logger, HttpContext.Session, Request, Response);
+        }
     }
 
     public void OnPost()
@@ -54,7 +57,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         if (hasRememberMe)
         {
             var cookieResponse = Cookie.Retrieve<AuthenticationData>(Request, "QAWA-AuthenticationData");
-            if (cookieResponse.Status is ResponseStatus.Success)
+            if (cookieResponse.Status is ResponseStatus.Error)
             {
                 if (!cookieResponse.HasValue)
                 {
@@ -72,7 +75,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         var authenticationData = new AuthenticationData
         {
             Email = email,
-            Token = SecretHasher.Hash(Password.Generate()),
+            Token = Password.Generate(),
             Source = HttpContext.Connection.RemoteIpAddress is null
                 ? ""
                 : HttpContext.Connection.RemoteIpAddress.ToString(),
@@ -81,6 +84,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         };
         Cookie.Store(Response, "QAWA-AuthenticationData", authenticationData, true, authenticationData.Expires);
 
+        authenticationData.Token = SecretHasher.Hash(authenticationData.Token);
         userInDb.AuthenticationData = authenticationData;
         DatabaseManager.Database.AddUserToDatabase(userInDb);
     }

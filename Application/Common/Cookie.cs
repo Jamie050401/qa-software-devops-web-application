@@ -2,9 +2,9 @@
 
 using Newtonsoft.Json;
 
-// TODO - Implement some kind of encoding for cookies (since they are stored in plain text - would also prevent HTTP listeners)
 public static class Cookie
 {
+    private static readonly string PassPhrase = Environment.GetEnvironmentVariable("QAWA-Cookie-Secret") ?? throw new Exception("Failed to read cookie secret from environment variables");
     private static readonly CookieOptions CookieOptions = new()
     {
         Expires = DateTimeOffset.UtcNow.AddDays(7),
@@ -13,14 +13,15 @@ public static class Cookie
         Secure = false // Ideally this would be true (need to setup HTTPS support)
     };
 
-    public static void Store<TValue>(HttpResponse response, string key, TValue authenticationData, bool isEssential = false, DateTimeOffset? expires = null)
+    public static void Store<TValue>(HttpResponse response, string key, TValue data, bool isEssential = false, DateTimeOffset? expires = null)
     {
         var cookieOptions = CookieOptions;
         cookieOptions.IsEssential = isEssential;
         if (expires is not null) cookieOptions.Expires = expires;
 
-        var json = JsonConvert.SerializeObject(authenticationData);
-        response.Cookies.Append(key, json, cookieOptions);
+        var json = JsonConvert.SerializeObject(data);
+        var encrypted = StringCipher.Encrypt(json, PassPhrase);
+        response.Cookies.Append(key, encrypted, cookieOptions);
     }
 
     public static Response<TValue, Error> Retrieve<TValue>(HttpRequest request, string key)
@@ -29,7 +30,8 @@ public static class Cookie
 
         if (cookie is null) return Response<TValue, Error>.NotFoundResponse();
 
-        var authenticationData = JsonConvert.DeserializeObject<TValue>(cookie);
+        var decrypted = StringCipher.Decrypt(cookie, PassPhrase);
+        var authenticationData = JsonConvert.DeserializeObject<TValue>(decrypted);
         return authenticationData is null
             ? Response<TValue, Error>.NotFoundResponse()
             : Response<TValue, Error>.OkValueResponse(authenticationData);

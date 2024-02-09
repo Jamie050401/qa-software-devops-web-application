@@ -6,12 +6,7 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 builder
-    .Services.AddRazorPages(options =>
-    {
-        // NOTE: For some reason enabling this route causes the dashboard button in the nav bar to route to /Register
-        //       No idea what causes this but I refuse to waste any more time trying to understand it - absolutely maddening.
-        //options.Conventions.AddPageRoute("/Dashboard", "/");
-    })
+    .Services.AddRazorPages()
     .Services.AddHsts(options =>
     {
         options.Preload = true;
@@ -36,14 +31,18 @@ builder
 
 var app = builder.Build();
 
-if (!app.Environment.IsDevelopment())
-{
+DatabaseManager.InitialiseDatabase();
 
+if (app.Environment.IsDevelopment())
+{
+    // TODO - Need to update GitHub actions and Dockerfile/docker-compose.yml to ensure this environment variable is set
+    Environment.SetEnvironmentVariable("QAWA-Cookie-Secret", "_zM374b@C9N_v-8?R-5?$-1J");
+}
+else
+{
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
-
-DatabaseManager.InitialiseDatabase();
 
 app.UseStaticFiles();
 app.UseRouting();

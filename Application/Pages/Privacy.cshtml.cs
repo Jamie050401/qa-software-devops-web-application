@@ -8,6 +8,6 @@ public class PrivacyModel(ILogger logger) : PageModel
 {
     public void OnGet()
     {
-        Session.Authenticate(HttpContext.Session, Response);
+        Session.Authenticate(HttpContext.Session, Request, Response);
     }
 }
