@@ -12,6 +12,11 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
 {
     public void OnGet()
     {
+        if (Session.GetBoolean(HttpContext.Session, "IsLogout"))
+        {
+            notyf.Success("Logged out successfully.");
+            Session.SetBoolean(HttpContext.Session, "IsLogout", false);
+        }
         Session.Redirect(HttpContext.Session, Response);
         Session.Login(logger, HttpContext.Session, Request, Response);
     }

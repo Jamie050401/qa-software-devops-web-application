@@ -27,7 +27,7 @@ public static class Cookie
     {
         var cookie = request.Cookies[key];
 
-        if (cookie is null) return Response<TValue, Error>.OkResponse();
+        if (cookie is null) return Response<TValue, Error>.NotFoundResponse();
 
         var authenticationData = JsonConvert.DeserializeObject<TValue>(cookie);
         return authenticationData is null
