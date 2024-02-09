@@ -9,7 +9,7 @@ public class DashboardModel(ILogger logger, INotyfService notyf) : PageModel
 {
     public void OnGet()
     {
-        Session.Authenticate(HttpContext.Session, Request, Response);
+        if (!Session.Authenticate(HttpContext.Session, Request, Response)) return;
 
         // ReSharper disable once InvertIf
         if (Session.GetBoolean(HttpContext.Session, "IsFirstDashboardVisit"))

@@ -16,7 +16,7 @@ public static class Session
         session.Set(key, BitConverter.GetBytes(value));
     }
 
-    public static void Authenticate(ISession session, HttpRequest request, HttpResponse response)
+    public static bool Authenticate(ISession session, HttpRequest request, HttpResponse response)
     {
         var loginCookieResponse = Cookie.Retrieve<bool>(request, "QAWA-HasLoggedIn");
         if (loginCookieResponse.Status is ResponseStatus.Success && loginCookieResponse.HasValue)
@@ -27,9 +27,19 @@ public static class Session
         var isLoggedIn = GetBoolean(session, "IsLoggedIn");
         var hasLoggedIn = GetBoolean(session, "HasLoggedIn");
 
-        if (isLoggedIn) return;
-        if (hasLoggedIn) response.Redirect("/Login", true);
+        if (isLoggedIn)
+        {
+            return true;
+        }
+
+        if (hasLoggedIn)
+        {
+            response.Redirect("/Login", true);
+            return false;
+        }
+
         response.Redirect("/Register", true);
+        return false;
     }
 
     public static bool Redirect(ISession session, HttpRequest request, HttpResponse response)
