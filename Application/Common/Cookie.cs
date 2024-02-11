@@ -2,7 +2,7 @@
 
 using Newtonsoft.Json;
 
-// TODO - Implement a means of detecting external manipulation of the encoded cookie (invalidate it if it has been modified)
+// TODO - Implement a means of detecting external manipulation of the encrypted cookie (invalidate it if it has been modified)
 public static class Cookie
 {
     private static readonly string PassPhrase = Environment.GetEnvironmentVariable("QAWA-Cookie-Secret") ?? throw new Exception("Failed to read cookie secret from environment variables");
@@ -14,7 +14,7 @@ public static class Cookie
         Secure = false // Ideally this would be true (need to setup HTTPS support)
     };
 
-    public static void Store<TValue>(HttpResponse response, string key, TValue data, bool isEssential = false, DateTimeOffset? expires = null)
+    public static void Store<TValue>(HttpResponse response, string key, TValue data, DateTimeOffset? expires = null, bool isEssential = false)
     {
         var cookieOptions = CookieOptions;
         cookieOptions.IsEssential = isEssential;

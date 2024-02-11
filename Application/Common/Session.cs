@@ -113,7 +113,7 @@ public static class Session
     {
         SetBoolean(session, "IsLoggedIn", true);
         SetBoolean(session, "HasLoggedIn", true);
-        Cookie.Store(response, "QAWA-HasLoggedIn", true, true);
+        Cookie.Store(response, "QAWA-HasLoggedIn", true, DateTimeOffset.UtcNow.AddDays(90), true);
         SetBoolean(session, "IsFirstDashboardVisit", true);
         response.Redirect("/Dashboard", true);
     }

@@ -80,7 +80,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
             Timestamp = DateTime.UtcNow,
             Expires = DateTimeOffset.UtcNow.AddDays(3)
         };
-        Cookie.Store(Response, "QAWA-AuthenticationData", authenticationData, true, authenticationData.Expires);
+        Cookie.Store(Response, "QAWA-AuthenticationData", authenticationData, authenticationData.Expires, true);
 
         authenticationData.Token = SecretHasher.Hash(authenticationData.Token);
         userInDb.AuthenticationData = authenticationData;
