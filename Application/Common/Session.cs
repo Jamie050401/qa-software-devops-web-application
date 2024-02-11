@@ -85,6 +85,7 @@ public static class Session
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
             logger.Information($"Login failure: unable to find user matching authentication data stored in cookies");
+            Cookie.Remove(response, "QAWA-AuthenticationData");
             return;
         }
         Debug.Assert(dbResponse.Value != null, "databaseResponse.Value != null");
@@ -95,10 +96,17 @@ public static class Session
                               authenticationData.Timestamp == userInDb.AuthenticationData.Timestamp &&
                               authenticationData.Expires == userInDb.AuthenticationData.Expires &&
                               DateTime.UtcNow < authenticationData.Expires.DateTime;
-        SetBoolean(session, "IsLoggedIn", isAuthenticated);
-        if (isAuthenticated) SetBoolean(session, "HasLoggedIn", true);
-        if (isAuthenticated) SetBoolean(session, "IsFirstDashboardVisit", true);
-        if (isAuthenticated) response.Redirect("/Dashboard", true);
+
+        if (!isAuthenticated)
+        {
+            Cookie.Remove(response, "QAWA-AuthenticationData");
+            return;
+        }
+
+        SetBoolean(session, "IsLoggedIn", true);
+        SetBoolean(session, "HasLoggedIn", true);
+        SetBoolean(session, "IsFirstDashboardVisit", true);
+        response.Redirect("/Dashboard", true);
     }
 
     public static void Login(ISession session, HttpResponse response)

@@ -18,10 +18,8 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
             Session.SetBoolean(HttpContext.Session, "IsLogout", false);
         }
 
-        if (!Session.Redirect(HttpContext.Session, Request, Response))
-        {
-            Session.Login(logger, HttpContext.Session, Request, Response);
-        }
+        if (Session.Redirect(HttpContext.Session, Request, Response)) return;
+        Session.Login(logger, HttpContext.Session, Request, Response);
     }
 
     public void OnPost()

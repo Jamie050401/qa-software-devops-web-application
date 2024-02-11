@@ -2,6 +2,7 @@
 
 using Newtonsoft.Json;
 
+// TODO - Implement a means of detecting external manipulation of the encoded cookie (invalidate it if it has been modified)
 public static class Cookie
 {
     private static readonly string PassPhrase = Environment.GetEnvironmentVariable("QAWA-Cookie-Secret") ?? throw new Exception("Failed to read cookie secret from environment variables");
