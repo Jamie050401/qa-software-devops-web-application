@@ -2,6 +2,7 @@
 
 using Data;
 using ILogger = Serilog.ILogger;
+using Models;
 using System.Diagnostics;
 
 public static class Session
@@ -120,8 +121,35 @@ public static class Session
         response.Redirect("/dashboard", true);
     }
 
-    public static void Login(ISession session, HttpResponse response)
+    public static void Login(ISession session, ConnectionInfo connectionInfo, HttpRequest request, HttpResponse response, bool hasRememberMe, string email, User userInDb)
     {
+        if (hasRememberMe)
+        {
+            var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, "QAWA-AuthenticationData");
+            if (cookieResponse.Status is ResponseStatus.Error)
+            {
+                if (!cookieResponse.HasValue)
+                {
+                    // TODO - Set 'Expires' via parameter such that the user can decide how long to be remembered for i.e. from 1 day up to 90 days
+                    var authenticationData = new AuthenticationData
+                    {
+                        Email = email,
+                        Token = Password.Generate(),
+                        Source = connectionInfo.RemoteIpAddress is null
+                            ? ""
+                            : connectionInfo.RemoteIpAddress.ToString(),
+                        Timestamp = DateTime.UtcNow,
+                        Expires = DateTimeOffset.UtcNow.AddDays(3)
+                    };
+                    Cookie.Store(response, "QAWA-AuthenticationData", authenticationData, authenticationData.Expires, true);
+
+                    authenticationData.Token = SecretHasher.Hash(authenticationData.Token);
+                    userInDb.AuthenticationData = authenticationData;
+                    DatabaseManager.Database.AddUserToDatabase(userInDb);
+                }
+            }
+        }
+
         SetBoolean(session, "IsLoggedIn", true);
         SetBoolean(session, "HasLoggedIn", true);
         Cookie.Store(response, "QAWA-HasLoggedIn", true, DateTimeOffset.UtcNow.AddDays(90), true);

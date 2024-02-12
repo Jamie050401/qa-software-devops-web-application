@@ -16,7 +16,7 @@ public class Database
         this.CreateTables();
     }
 
-    public Response<Fund, Error> GetFundFromDatabase(int fundId)
+    public Response<Fund, Error> GetFundFromDatabase(Guid fundId)
     {
         var fundInCache = (Fund?)this.GetFromCache($"Fund{fundId}");
         if (fundInCache is not null)
@@ -24,7 +24,7 @@ public class Database
             return Response<Fund, Error>.OkValueResponse(fundInCache);
         }
 
-        var sqlGetFromDatabase = $"SELECT * FROM Funds WHERE Id = {fundId};";
+        var sqlGetFromDatabase = $"SELECT * FROM Funds WHERE Id = \"{fundId}\";";
         var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
 
         if (!dbResponse.Reader.Read())
@@ -32,30 +32,36 @@ public class Database
             return Response<Fund, Error>.NotFoundResponse();
         }
 
-        var id = dbResponse.Reader.GetInt32(0);
+        var id = dbResponse.Reader.GetGuid(0);
         var name = dbResponse.Reader.GetString(1);
         var growthRate = dbResponse.Reader.GetDecimal(2);
         var charge = dbResponse.Reader.GetDecimal(3);
         dbResponse.Dispose();
-        var fundInDb = new Fund(id, name, growthRate, charge);
+        var fundInDb = new Fund
+        {
+            Id = id,
+            Name = name,
+            GrowthRate = growthRate,
+            Charge = charge
+        };
         this.AddToCache($"Fund{fundInDb.Id}", fundInDb);
 
         return Response<Fund, Error>.OkValueResponse(fundInDb);
     }
 
-    public bool FundExistsInDatabase(int fundId)
+    public bool FundExistsInDatabase(Guid fundId)
     {
         var dbResponse = this.GetFundFromDatabase(fundId);
         return dbResponse.Status is ResponseStatus.Success && dbResponse.HasValue;
     }
 
-    public void DeleteFundFromDatabase(int fundId)
+    public void DeleteFundFromDatabase(Guid fundId)
     {
         var response = this.GetFundFromDatabase(fundId);
 
         if (response.Status == ResponseStatus.Error) return;
 
-        var sqlDeleteFromDatabase = $"DELETE FROM Funds WHERE Id = {fundId};";
+        var sqlDeleteFromDatabase = $"DELETE FROM Funds WHERE Id = \"{fundId}\";";
         var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
         if (affected > 0)
         {
@@ -71,17 +77,17 @@ public class Database
         {
             sqlAddToDatabase = $"""
                 UPDATE Funds
-                SET Name = "{fund.Id}",
+                SET Name = "{fund.Id.ToString()}",
                     GrowthRate = {fund.GrowthRate},
                     Charge = {fund.Charge}
-                WHERE Id = {fund.Id};
+                WHERE Id = "{fund.Id.ToString()}";
             """;
         }
         else
         {
             sqlAddToDatabase = $"""
                 INSERT INTO Funds (Id, Name, GrowthRate, Charge)
-                VALUES ({fund.Id}, "{fund.Name}", {fund.GrowthRate}, {fund.Charge});
+                VALUES ("{fund.Id.ToString()}", "{fund.Name}", {fund.GrowthRate}, {fund.Charge});
             """;
         }
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
@@ -107,7 +113,10 @@ public class Database
 
         var name = dbResponse.Reader.GetString(0);
         dbResponse.Dispose();
-        var roleInDb = new Role(name);
+        var roleInDb = new Role
+        {
+            Name = name
+        };
         this.AddToCache($"Role{roleInDb.Name}", roleInDb);
 
         return Response<Role, Error>.OkValueResponse(roleInDb);
@@ -157,7 +166,7 @@ public class Database
         this.AddToCache($"Role{role.Name}", role);
     }
 
-    public Response<User, Error> GetUserFromDatabase(int? userId = null, string? userEmail = null)
+    public Response<User, Error> GetUserFromDatabase(Guid? userId = null, string? userEmail = null)
     {
         if (userId is null && userEmail is null)
         {
@@ -170,7 +179,7 @@ public class Database
             return Response<User, Error>.OkValueResponse(userInCache);
         }
 
-        var sqlGetFromDatabase = userId is null ? $"SELECT * FROM Users WHERE Email = \"{userEmail}\";" : $"SELECT * FROM Users WHERE Id = {userId};";
+        var sqlGetFromDatabase = userId is null ? $"SELECT * FROM Users WHERE Email = \"{userEmail}\";" : $"SELECT * FROM Users WHERE Id = \"{userId}\";";
         var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
 
         if (!dbResponse.Reader.Read())
@@ -178,7 +187,7 @@ public class Database
             return Response<User, Error>.NotFoundResponse();
         }
 
-        var id = dbResponse.Reader.GetInt32(0);
+        var id = dbResponse.Reader.GetGuid(0);
         var email = dbResponse.Reader.GetString(1);
         var password = dbResponse.Reader.GetString(2);
         var authenticationData = dbResponse.Reader.IsDBNull(3) ? null : JsonConvert.DeserializeObject<AuthenticationData>(dbResponse.Reader.GetString(3));
@@ -202,13 +211,13 @@ public class Database
         return Response<User, Error>.OkValueResponse(userInDb);
     }
 
-    public bool UserExistsInDatabase(int? userId = null, string? userEmail = null)
+    public bool UserExistsInDatabase(Guid? userId = null, string? userEmail = null)
     {
         var dbResponse = this.GetUserFromDatabase(userId, userEmail);
         return dbResponse.Status is ResponseStatus.Success && dbResponse.HasValue;
     }
 
-    public void DeleteUserFromDatabase(int? userId = null, string? userEmail = null)
+    public void DeleteUserFromDatabase(Guid? userId = null, string? userEmail = null)
     {
         if (userId is null && userEmail is null) return;
 
@@ -216,7 +225,7 @@ public class Database
 
         if (userInDb.Status == ResponseStatus.Error) return;
 
-        var sqlDeleteFromDatabase = userId is null ? $"DELETE FROM Users WHERE Email = \"{userEmail}\";" : $"DELETE FROM Users WHERE Id = {userId};";
+        var sqlDeleteFromDatabase = userId is null ? $"DELETE FROM Users WHERE Email = \"{userEmail}\";" : $"DELETE FROM Users WHERE Id = \"{userId}\";";
         var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
         if (affected <= 0) return;
         Debug.Assert(userInDb.Value != null, "userInDb.Value != null");
@@ -238,14 +247,14 @@ public class Database
                     FirstName = "{user.FirstName}",
                     LastName = "{user.LastName}",
                     RoleName = "{user.RoleName}"
-                WHERE Id = {user.Id};
+                WHERE Id = "{user.Id.ToString()}";
             """;
         }
         else
         {
             sqlAddToDatabase = $"""
                 INSERT INTO Users (Id, Email, Password, AuthenticationData, FirstName, LastName, RoleName)
-                VALUES ({user.Id}, "{user.Email}", "{user.Password}", json_set('{JsonConvert.SerializeObject(user.AuthenticationData)}'), "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
+                VALUES ("{user.Id.ToString()}", "{user.Email}", "{user.Password}", json_set('{JsonConvert.SerializeObject(user.AuthenticationData)}'), "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
             """;
         }
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
@@ -254,7 +263,7 @@ public class Database
         this.AddToCache($"User{user.Email}", user);
     }
 
-    public Response<Result, Error> GetResultFromDatabase(int resultId)
+    public Response<Result, Error> GetResultFromDatabase(Guid resultId)
     {
         var resultInCache = (Result?)this.GetFromCache($"Result{resultId}");
         if (resultInCache is not null)
@@ -262,7 +271,7 @@ public class Database
             return Response<Result, Error>.OkValueResponse(resultInCache);
         }
 
-        var sqlGetFromDatabase = $"SELECT * FROM Results WHERE Id = {resultId};";
+        var sqlGetFromDatabase = $"SELECT * FROM Results WHERE Id = \"{resultId}\";";
         var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
 
         if (!dbResponse.Reader.Read())
@@ -270,30 +279,36 @@ public class Database
             return Response<Result, Error>.NotFoundResponse();
         }
 
-        var id = dbResponse.Reader.GetInt32(0);
-        var userId = dbResponse.Reader.GetInt32(1);
+        var id = dbResponse.Reader.GetGuid(0);
+        var userId = dbResponse.Reader.GetGuid(1);
         var totalInvestment = dbResponse.Reader.GetDecimal(2);
         var projectedValue = dbResponse.Reader.GetDecimal(3);
         dbResponse.Dispose();
-        var resultInDb = new Result(id, userId, totalInvestment, projectedValue);
+        var resultInDb = new Result
+        {
+            Id = id,
+            UserId = userId,
+            TotalInvestment = totalInvestment,
+            ProjectedValue = projectedValue
+        };
         this.AddToCache($"Result{resultInDb.Id}", resultInDb);
 
         return Response<Result, Error>.OkValueResponse(resultInDb);
     }
 
-    public bool ResultExistsInDatabase(int resultId)
+    public bool ResultExistsInDatabase(Guid resultId)
     {
         var dbResponse = this.GetResultFromDatabase(resultId);
         return dbResponse.Status is ResponseStatus.Success && dbResponse.HasValue;
     }
 
-    public void DeleteResultFromDatabase(int resultId)
+    public void DeleteResultFromDatabase(Guid resultId)
     {
         var resultInDb = this.GetResultFromDatabase(resultId);
 
         if (resultInDb.Status == ResponseStatus.Error) return;
 
-        var sqlDeleteFromDatabase = $"DELETE FROM Results WHERE Id = {resultId};";
+        var sqlDeleteFromDatabase = $"DELETE FROM Results WHERE Id = \"{resultId}\";";
         var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
         if (affected > 0)
         {
@@ -309,17 +324,17 @@ public class Database
         {
             sqlAddToDatabase = $"""
                 UPDATE Results
-                SET UserId = {result.UserId},
+                SET UserId = "{result.UserId.ToString()}",
                     TotalInvestment = {result.TotalInvestment},
                     ProjectedValue = {result.ProjectedValue}
-                WHERE Id = {result.Id};
+                WHERE Id = "{result.Id.ToString()}";
             """;
         }
         else
         {
             sqlAddToDatabase = $"""
                 INSERT INTO Results (Id, UserId, TotalInvestment, ProjectedValue)
-                VALUES ({result.Id}, {result.UserId}, {result.TotalInvestment}, {result.ProjectedValue});
+                VALUES ("{result.Id.ToString()}", {result.UserId.ToString()}, {result.TotalInvestment}, {result.ProjectedValue});
             """;
         }
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
@@ -331,7 +346,7 @@ public class Database
     {
         const string sqlCreateTables = """
             CREATE TABLE IF NOT EXISTS Funds (
-                Id INTEGER PRIMARY KEY NOT NULL,
+                Id TEXT PRIMARY KEY NOT NULL,
                 Name TEXT NOT NULL,
                 GrowthRate REAL NOT NULL,
                 Charge REAL NOT NULL
@@ -342,7 +357,7 @@ public class Database
             );
            
             CREATE TABLE IF NOT EXISTS Users (
-                Id INTEGER PRIMARY KEY NOT NULL,
+                Id TEXT PRIMARY KEY NOT NULL,
                 Email TEXT NOT NULL,
                 Password TEXT NOT NULL,
                 AuthenticationData TEXT,
@@ -354,7 +369,7 @@ public class Database
             CREATE UNIQUE INDEX IF NOT EXISTS idx_Email ON Users(Email);
             
             CREATE TABLE IF NOT EXISTS Results (
-                Id INTEGER PRIMARY KEY NOT NULL,
+                Id TEXT PRIMARY KEY NOT NULL,
                 UserId INTEGER NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
                 TotalInvestment REAL NOT NULL,
                 ProjectedValue REAL NOT NULL

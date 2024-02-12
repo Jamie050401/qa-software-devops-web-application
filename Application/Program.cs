@@ -24,6 +24,10 @@ builder
     .AddSerilog(options =>
     {
         options.WriteTo.Console();
+        if (!builder.Environment.IsDevelopment())
+        {
+            options.MinimumLevel.Error();
+        }
     })
     .AddNotyf(options =>
     {

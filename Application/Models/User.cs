@@ -2,9 +2,9 @@
 
 namespace Application.Models;
 
-public class User()
+public class User
 {
-    public int Id { get; init; }
+    public Guid Id { get; init; }
     public required string Email { get; init; }
     public required string Password { get; init; }
     public AuthenticationData? AuthenticationData { get; set; }
