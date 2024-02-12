@@ -6,18 +6,25 @@ public static class DatabaseManager
 {
     public static void InitialiseDatabase()
     {
+        const int id = 0;
+        const string roleName = "DummyRole";
+        if (DatabaseManager.Database.FundExistsInDatabase(id) ||
+            DatabaseManager.Database.RoleExistsInDatabase(roleName) ||
+            DatabaseManager.Database.UserExistsInDatabase(id) ||
+            DatabaseManager.Database.ResultExistsInDatabase(id)) return;
+
         // ReSharper disable once StringLiteralTypo
         const string dummyPasswordHash = "2018F6578C204B187CEDFA7EFC8069FF70602E9FA1F4E77DFC068B190F95C493:A6DC1A645E1ADA26D2EB26E47838BFCC:50000:SHA256";
-        Database.AddFundToDatabase(new Fund(0, "DummyFund", 0.0M, 0.0M));
-        Database.AddRoleToDatabase(new Role("DummyRole"));
+        Database.AddFundToDatabase(new Fund(id, "DummyFund", 0.0M, 0.0M));
+        Database.AddRoleToDatabase(new Role(roleName));
         Database.AddUserToDatabase(new User
         {
-            Id = 0,
+            Id = id,
             Email = "dummyemail@email.com",
             Password = dummyPasswordHash,
             RoleName = "DummyRole"
         });
-        Database.AddResultToDatabase(new Result(0, 0, 0.0M, 0.0M));
+        Database.AddResultToDatabase(new Result(id, 0, 0.0M, 0.0M));
     }
 
     public static Database Database { get; } = new();

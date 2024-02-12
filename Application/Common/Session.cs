@@ -1,6 +1,7 @@
 ﻿namespace Application.Common;
 
 using Data;
+using ILogger = Serilog.ILogger;
 using System.Diagnostics;
 
 public static class Session
@@ -15,37 +16,96 @@ public static class Session
         session.Set(key, BitConverter.GetBytes(value));
     }
 
-    public static void Authenticate(ISession session, HttpRequest request, HttpResponse response)
+    public static bool Authenticate(ISession session, HttpRequest request, HttpResponse response)
     {
-        var authenticationData = Cookie.Retrieve(request, "QAWA-AuthenticationData");
-        if (!authenticationData.TryGetValue("Email", out var email) ||
-            !authenticationData.TryGetValue("Token", out var token) ||
-            !authenticationData.TryGetValue("Source", out var source)) return;
-        var userInDb = DatabaseManager.Database.GetUserFromDatabase(userEmail: (string)email);
-        if (userInDb.Status is ResponseStatus.Error || !userInDb.HasValue) return;
-        Debug.Assert(userInDb.Value != null, "userInDb.Value != null");
-        var isAuthenticated = (string)token == userInDb.Value.Token && (string)source == userInDb.Value.TokenSource;
-        SetBoolean(session, "IsLoggedIn", isAuthenticated);
-        SetBoolean(session, "HasLoggedIn", isAuthenticated);
-        SetBoolean(session, "IsFirstDashboardVisit", isAuthenticated);
-        if (isAuthenticated) response.Redirect("/Dashboard", true);
-    }
+        var loginCookieResponse = Cookie.Retrieve<bool>(request, "QAWA-HasLoggedIn");
+        if (loginCookieResponse.Status is ResponseStatus.Success && loginCookieResponse.HasValue)
+        {
+            SetBoolean(session, "HasLoggedIn", loginCookieResponse.Value);
+        }
 
-    public static void Authenticate(ISession session, HttpResponse response)
-    {
         var isLoggedIn = GetBoolean(session, "IsLoggedIn");
         var hasLoggedIn = GetBoolean(session, "HasLoggedIn");
 
-        if (isLoggedIn) return;
-        if (hasLoggedIn) response.Redirect("/Login", true);
+        if (isLoggedIn)
+        {
+            return true;
+        }
+
+        if (hasLoggedIn)
+        {
+            response.Redirect("/Login", true);
+            return false;
+        }
+
         response.Redirect("/Register", true);
+        return false;
     }
 
-    public static void Redirect(ISession session, HttpResponse response)
+    public static bool Redirect(ISession session, HttpRequest request, HttpResponse response)
     {
-        var isLoggedIn = GetBoolean(session, "IsLoggedIn");
+        var loginCookieResponse = Cookie.Retrieve<bool>(request, "QAWA-HasLoggedIn");
+        if (loginCookieResponse.Status is ResponseStatus.Success && loginCookieResponse.HasValue)
+        {
+            SetBoolean(session, "HasLoggedIn", loginCookieResponse.Value);
+        }
 
-        if (!isLoggedIn) return;
+        var isLoggedIn = GetBoolean(session, "IsLoggedIn");
+        var hasLoggedIn = GetBoolean(session, "HasLoggedIn");
+
+        if (isLoggedIn)
+        {
+            response.Redirect("/Dashboard", true);
+            return true;
+        }
+
+        // ReSharper disable once InvertIf
+        if (hasLoggedIn && request.Path.Value == "/Register")
+        {
+            response.Redirect("/Login", true);
+            return true;
+        }
+
+        return false;
+    }
+
+    // TODO - Implement logic to regenerate the token everytime it is used?
+    // TODO - Implement support for users to have multiple valid tokens (i.e. for different locations or devices)
+    public static void Login(ILogger logger, ISession session, HttpRequest request, HttpResponse response)
+    {
+        var authCookieResponse = Cookie.Retrieve<AuthenticationData>(request, "QAWA-AuthenticationData");
+        if (authCookieResponse.Status is ResponseStatus.Error || !authCookieResponse.HasValue)
+        {
+            logger.Information($"Login failure: unable to retrieve authentication data from cookies");
+            return;
+        }
+        Debug.Assert(authCookieResponse.Value != null, "cookieResponse.Value != null");
+        var authenticationData = authCookieResponse.Value;
+        var dbResponse = DatabaseManager.Database.GetUserFromDatabase(userEmail: authenticationData.Email);
+        if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
+        {
+            logger.Information($"Login failure: unable to find user matching authentication data stored in cookies");
+            Cookie.Remove(response, "QAWA-AuthenticationData");
+            return;
+        }
+        Debug.Assert(dbResponse.Value != null, "databaseResponse.Value != null");
+        var userInDb = dbResponse.Value;
+        var isAuthenticated = userInDb.AuthenticationData is not null &&
+                              SecretHasher.Verify(authenticationData.Token, userInDb.AuthenticationData.Token) &&
+                              authenticationData.Source == userInDb.AuthenticationData.Source &&
+                              authenticationData.Timestamp == userInDb.AuthenticationData.Timestamp &&
+                              authenticationData.Expires == userInDb.AuthenticationData.Expires &&
+                              DateTime.UtcNow < authenticationData.Expires.DateTime;
+
+        if (!isAuthenticated)
+        {
+            Cookie.Remove(response, "QAWA-AuthenticationData");
+            return;
+        }
+
+        SetBoolean(session, "IsLoggedIn", true);
+        SetBoolean(session, "HasLoggedIn", true);
+        SetBoolean(session, "IsFirstDashboardVisit", true);
         response.Redirect("/Dashboard", true);
     }
 
@@ -53,12 +113,15 @@ public static class Session
     {
         SetBoolean(session, "IsLoggedIn", true);
         SetBoolean(session, "HasLoggedIn", true);
+        Cookie.Store(response, "QAWA-HasLoggedIn", true, DateTimeOffset.UtcNow.AddDays(90), true);
         SetBoolean(session, "IsFirstDashboardVisit", true);
         response.Redirect("/Dashboard", true);
     }
 
-    public static void Logout(ISession session, HttpResponse response)
+    public static void Logout(ISession session, HttpRequest request, HttpResponse response)
     {
+        Cookie.Remove(response, "QAWA-AuthenticationData");
+
         SetBoolean(session, "IsLoggedIn", false);
         response.Redirect("/Login", true);
     }

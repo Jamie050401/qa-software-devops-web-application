@@ -5,14 +5,21 @@ using Common;
 using Data;
 using ILogger = Serilog.ILogger;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Models;
 using System.Diagnostics;
 
 public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
 {
     public void OnGet()
     {
-        Session.Redirect(HttpContext.Session, Response);
-        Session.Authenticate(HttpContext.Session, Request, Response);
+        if (Session.GetBoolean(HttpContext.Session, "IsLogout"))
+        {
+            notyf.Success("Logged out successfully.");
+            Session.SetBoolean(HttpContext.Session, "IsLogout", false);
+        }
+
+        if (Session.Redirect(HttpContext.Session, Request, Response)) return;
+        Session.Login(logger, HttpContext.Session, Request, Response);
     }
 
     public void OnPost()
@@ -47,24 +54,36 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
 
         if (hasRememberMe)
         {
-            var authenticationData = Cookie.Retrieve(Request, "QAWA-AuthenticationData");
-            if (!authenticationData.ContainsKey("Email"))
+            var cookieResponse = Cookie.Retrieve<AuthenticationData>(Request, "QAWA-AuthenticationData");
+            if (cookieResponse.Status is ResponseStatus.Error)
             {
-                var token = SecretHasher.Hash(Password.Generate());
-                var tokenSource = HttpContext.Connection.RemoteIpAddress is null
-                    ? ""
-                    : HttpContext.Connection.RemoteIpAddress.ToString();
-                authenticationData.Add("Email", email);
-                authenticationData.Add("Token", token);
-                authenticationData.Add("Source", tokenSource);
-                Cookie.Store(Response, "QAWA-AuthenticationData", authenticationData, true);
-
-                userInDb.Token = token;
-                userInDb.TokenSource = tokenSource;
-                DatabaseManager.Database.AddUserToDatabase(userInDb);
+                if (!cookieResponse.HasValue)
+                {
+                    this.UpdateAuthenticationDataCookie(email, userInDb);
+                }
             }
         }
 
         Session.Login(HttpContext.Session, Response);
+    }
+
+    // TODO - Set 'Expires' via parameter such that the user can decide how long to be remembered for i.e. from 1 day up to 90 days
+    private void UpdateAuthenticationDataCookie(string email, User userInDb)
+    {
+        var authenticationData = new AuthenticationData
+        {
+            Email = email,
+            Token = Password.Generate(),
+            Source = HttpContext.Connection.RemoteIpAddress is null
+                ? ""
+                : HttpContext.Connection.RemoteIpAddress.ToString(),
+            Timestamp = DateTime.UtcNow,
+            Expires = DateTimeOffset.UtcNow.AddDays(3)
+        };
+        Cookie.Store(Response, "QAWA-AuthenticationData", authenticationData, authenticationData.Expires, true);
+
+        authenticationData.Token = SecretHasher.Hash(authenticationData.Token);
+        userInDb.AuthenticationData = authenticationData;
+        DatabaseManager.Database.AddUserToDatabase(userInDb);
     }
 }

@@ -1,11 +1,11 @@
-﻿using System.Diagnostics;
-
-namespace Application.Data;
+﻿namespace Application.Data;
 
 using Common;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Caching.Memory;
 using Models;
+using Newtonsoft.Json;
+using System.Diagnostics;
 
 public class Database
 {
@@ -41,6 +41,12 @@ public class Database
         this.AddToCache($"Fund{fundInDb.Id}", fundInDb);
 
         return Response<Fund, Error>.OkValueResponse(fundInDb);
+    }
+
+    public bool FundExistsInDatabase(int fundId)
+    {
+        var dbResponse = this.GetFundFromDatabase(fundId);
+        return dbResponse.Status is ResponseStatus.Success && dbResponse.HasValue;
     }
 
     public void DeleteFundFromDatabase(int fundId)
@@ -107,6 +113,12 @@ public class Database
         return Response<Role, Error>.OkValueResponse(roleInDb);
     }
 
+    public bool RoleExistsInDatabase(string roleName)
+    {
+        var dbResponse = this.GetRoleFromDatabase(roleName);
+        return dbResponse.Status is ResponseStatus.Success && dbResponse.HasValue;
+    }
+
     public void DeleteRoleFromDatabase(string roleName)
     {
         var roleInDb = this.GetRoleFromDatabase(roleName);
@@ -169,19 +181,17 @@ public class Database
         var id = dbResponse.Reader.GetInt32(0);
         var email = dbResponse.Reader.GetString(1);
         var password = dbResponse.Reader.GetString(2);
-        var token = dbResponse.Reader.IsDBNull(3) ? null : dbResponse.Reader.GetString(3);
-        var tokenSource = dbResponse.Reader.IsDBNull(4) ? null : dbResponse.Reader.GetString(4);
-        var firstName = dbResponse.Reader.IsDBNull(5) ? null : dbResponse.Reader.GetString(5);
-        var lastName = dbResponse.Reader.IsDBNull(6) ? null : dbResponse.Reader.GetString(6);
-        var roleName = dbResponse.Reader.GetString(7);
+        var authenticationData = dbResponse.Reader.IsDBNull(3) ? null : JsonConvert.DeserializeObject<AuthenticationData>(dbResponse.Reader.GetString(3));
+        var firstName = dbResponse.Reader.IsDBNull(4) ? null : dbResponse.Reader.GetString(4);
+        var lastName = dbResponse.Reader.IsDBNull(5) ? null : dbResponse.Reader.GetString(5);
+        var roleName = dbResponse.Reader.GetString(6);
         dbResponse.Dispose();
         var userInDb = new User
         {
             Id = id,
             Email = email,
             Password = password,
-            Token = token,
-            TokenSource = tokenSource,
+            AuthenticationData = authenticationData,
             FirstName = firstName,
             LastName = lastName,
             RoleName = roleName
@@ -190,6 +200,12 @@ public class Database
         this.AddToCache($"User{userInDb.Email}", userInDb);
 
         return Response<User, Error>.OkValueResponse(userInDb);
+    }
+
+    public bool UserExistsInDatabase(int? userId = null, string? userEmail = null)
+    {
+        var dbResponse = this.GetUserFromDatabase(userId, userEmail);
+        return dbResponse.Status is ResponseStatus.Success && dbResponse.HasValue;
     }
 
     public void DeleteUserFromDatabase(int? userId = null, string? userEmail = null)
@@ -218,8 +234,7 @@ public class Database
                 UPDATE Users
                 SET Email = "{user.Email}",
                     Password = "{user.Password}",
-                    Token = "{user.Token}",
-                    TokenSource = "{user.TokenSource}",
+                    AuthenticationData = json_set('{JsonConvert.SerializeObject(user.AuthenticationData)}'),
                     FirstName = "{user.FirstName}",
                     LastName = "{user.LastName}",
                     RoleName = "{user.RoleName}"
@@ -229,8 +244,8 @@ public class Database
         else
         {
             sqlAddToDatabase = $"""
-                INSERT INTO Users (Id, Email, Password, Token, TokenSource, FirstName, LastName, RoleName)
-                VALUES ({user.Id}, "{user.Email}", "{user.Password}", "{user.Token}", "{user.TokenSource}", "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
+                INSERT INTO Users (Id, Email, Password, AuthenticationData, FirstName, LastName, RoleName)
+                VALUES ({user.Id}, "{user.Email}", "{user.Password}", json_set('{JsonConvert.SerializeObject(user.AuthenticationData)}'), "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
             """;
         }
         var affected = this.ExecuteNonQuery(sqlAddToDatabase);
@@ -264,6 +279,12 @@ public class Database
         this.AddToCache($"Result{resultInDb.Id}", resultInDb);
 
         return Response<Result, Error>.OkValueResponse(resultInDb);
+    }
+
+    public bool ResultExistsInDatabase(int resultId)
+    {
+        var dbResponse = this.GetResultFromDatabase(resultId);
+        return dbResponse.Status is ResponseStatus.Success && dbResponse.HasValue;
     }
 
     public void DeleteResultFromDatabase(int resultId)
@@ -324,8 +345,7 @@ public class Database
                 Id INTEGER PRIMARY KEY NOT NULL,
                 Email TEXT NOT NULL,
                 Password TEXT NOT NULL,
-                Token TEXT,
-                TokenSource TEXT,
+                AuthenticationData TEXT,
                 FirstName TEXT,
                 LastName TEXT,
                 RoleName TEXT NOT NULL REFERENCES Roles(Name) ON DELETE NO ACTION

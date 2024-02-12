@@ -1,0 +1,20 @@
+name: Main Push
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  Build-Test:
+    uses: ./.github/workflows/reusable-build-test.yml
+    secrets: inherit
+
+  Publish:
+    needs: Build-Test
+    uses: ./.github/workflows/reusable-publish.yml
+    secrets: inherit
+
+  #Deploy:
+  #  needs: Publish
+  #  uses: ./.github/workflows/reusable-deploy.yml
+  #  secrets: inherit
