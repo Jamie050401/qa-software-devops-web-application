@@ -33,7 +33,7 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
         {
             Id = Guid.NewGuid(),
             Email = email,
-            Password = password,
+            Password = SecretHasher.Hash(password),
             FirstName = firstName,
             LastName = lastName,
             RoleName = "Default"
@@ -42,8 +42,8 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
         var isUnique = DatabaseManager.Database.UserExistsInDatabase(user.Id);
         if (!isUnique)
         {
-            notyf.Error("Failed to register user!");
-            logger.Error("Registration failure: user already exists in database");
+            notyf.Error("Failed to register user.");
+            logger.Information("Registration failure: user already exists in database");
             return;
         }
 
@@ -51,8 +51,8 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
         var dbResponse = DatabaseManager.Database.GetUserFromDatabase(user.Id);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
-            notyf.Error("Failed to register user!");
-            logger.Error("Registration failure: unable to add user to database");
+            notyf.Error("Failed to register user.");
+            logger.Information("Registration failure: unable to add user to database");
             return;
         }
 
