@@ -2,10 +2,9 @@ namespace Application.Pages;
 
 using AspNetCoreHero.ToastNotification.Abstractions;
 using Common;
-using ILogger = Serilog.ILogger;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class DashboardModel(ILogger logger, INotyfService notyf) : PageModel
+public class DashboardModel(INotyfService notyf) : PageModel
 {
     public void OnGet()
     {
@@ -21,7 +20,6 @@ public class DashboardModel(ILogger logger, INotyfService notyf) : PageModel
 
     public void OnPostLogout()
     {
-        Session.SetBoolean(HttpContext.Session, "IsLogout", true);
         Session.Logout(HttpContext.Session, Request, Response);
     }
 }

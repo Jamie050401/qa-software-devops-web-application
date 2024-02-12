@@ -1,6 +1,6 @@
 ﻿namespace Application.Models;
 
-public class Role(string name)
+public class Role
 {
-    public string Name { get; } = name;
+    public required string Name { get; init; }
 }

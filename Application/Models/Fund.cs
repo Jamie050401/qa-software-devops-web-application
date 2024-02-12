@@ -1,9 +1,9 @@
 ﻿namespace Application.Models;
 
-public class Fund(int id, string name, decimal growthRate, decimal charge)
+public class Fund
 {
-    public int Id { get; } = id;
-    public string Name { get; } = name;
-    public decimal GrowthRate { get; } = growthRate;
-    public decimal Charge { get; } = charge;
+    public Guid Id { get; init; }
+    public required string Name { get; init; }
+    public decimal GrowthRate { get; init; }
+    public decimal Charge { get; init; }
 }

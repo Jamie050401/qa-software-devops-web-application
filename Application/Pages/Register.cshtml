@@ -1,4 +1,4 @@
-﻿@page
+﻿@page "/register"
 @model RegisterModel
 
 @{
@@ -17,27 +17,27 @@
             <form class="p-4 p-md-5 border rounded-3 bg-light" method="POST">
                 <div class="form-floating mb-3">
                     <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com">
-                    <label for="floatingInput">Email address</label>
+                    <label>Email address</label>
                 </div>
                 <div class="form-floating mb-3">
                     <input type="text" class="form-control" id="first_name" name="first_name" placeholder="First Name">
-                    <label for="floatingInput">First name</label>
+                    <label>First name</label>
                 </div>
                 <div class="form-floating mb-3">
                     <input type="text" class="form-control" id="last_name" name="last_name" placeholder="Last Name">
-                    <label for="floatingInput">Last name</label>
+                    <label>Last name</label>
                 </div>
                 <div class="form-floating mb-3">
                     <input type="password" class="form-control" id="password_first" name="password_first" placeholder="Password">
-                    <label for="floatingPassword">Password</label>
+                    <label>Password</label>
                 </div>
                 <div class="form-floating mb-3">
                     <input type="password" class="form-control" id="password_second" name="password_second" placeholder="Password">
-                    <label for="floatingPassword">Confirm password</label>
+                    <label>Confirm password</label>
                 </div>
                 <div class="checkbox mb-3 text-center">
                     <label>
-                        <input type="checkbox" value="remember_me" id="remember_me" name="remember_me"> Remember me
+                        <input type="checkbox" id="remember_me" name="remember_me" value="true"> Remember me
                     </label>
                 </div>
                 <button class="w-100 btn btn-lg btn-primary" type="submit">Sign-up</button>
@@ -45,7 +45,7 @@
                 <small class="text-muted">By clicking Sign-up, you agree to the terms of use.</small>
                 <hr class="my-4">
                 <small class="text-muted">Already have an account?</small>
-                <button type="button" class="btn btn-link btn-sm float-end" onclick="window.location.href='/Login'">Click here to sign-in.</button>
+                <form method="POST"><button class="btn btn-link btn-sm" asp-page-handler="Switch" type="submit">Click here to sign-in.</button></form>
             </form>
         </div>
     </div>
