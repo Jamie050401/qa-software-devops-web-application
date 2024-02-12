@@ -6,7 +6,7 @@ on:
 
 jobs:
   Build-Test:
-    uses: ./.github/workflows/reusable/build-test.yml
+    uses: ./.github/reusable-workflows/build-test.yml
     with:
       github-workspace: ${{ github.workspace }}
     secrets: inherit
