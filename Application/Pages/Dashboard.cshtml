@@ -1,4 +1,4 @@
-﻿@page
+﻿@page "/dashboard"
 @model DashboardModel
 
 @{
@@ -7,7 +7,7 @@
 
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
-    <form asp-page-handler="logout" method="post">
+    <form asp-page-handler="Logout" method="POST">
         <button class="btn btn-default">Logout</button>
     </form>
 </div>

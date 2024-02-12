@@ -6,6 +6,11 @@ using System.Diagnostics;
 
 public static class Session
 {
+    public static bool HasValue(ISession session, string key)
+    {
+        return session.TryGetValue(key, out _);
+    }
+
     public static bool GetBoolean(ISession session, string key)
     {
         return session.TryGetValue(key, out var boolean) && BitConverter.ToBoolean(boolean);
@@ -18,10 +23,13 @@ public static class Session
 
     public static bool Authenticate(ISession session, HttpRequest request, HttpResponse response)
     {
-        var loginCookieResponse = Cookie.Retrieve<bool>(request, "QAWA-HasLoggedIn");
-        if (loginCookieResponse.Status is ResponseStatus.Success && loginCookieResponse.HasValue)
+        if (!HasValue(session, "HasLoggedIn"))
         {
-            SetBoolean(session, "HasLoggedIn", loginCookieResponse.Value);
+            var loginCookieResponse = Cookie.Retrieve<bool>(request, "QAWA-HasLoggedIn");
+            if (loginCookieResponse.Status is ResponseStatus.Success && loginCookieResponse.HasValue)
+            {
+                SetBoolean(session, "HasLoggedIn", loginCookieResponse.Value);
+            }
         }
 
         var isLoggedIn = GetBoolean(session, "IsLoggedIn");
@@ -34,20 +42,23 @@ public static class Session
 
         if (hasLoggedIn)
         {
-            response.Redirect("/Login", true);
+            response.Redirect("/login", true);
             return false;
         }
 
-        response.Redirect("/Register", true);
+        response.Redirect("/register", true);
         return false;
     }
 
     public static bool Redirect(ISession session, HttpRequest request, HttpResponse response)
     {
-        var loginCookieResponse = Cookie.Retrieve<bool>(request, "QAWA-HasLoggedIn");
-        if (loginCookieResponse.Status is ResponseStatus.Success && loginCookieResponse.HasValue)
+        if (!HasValue(session, "HasLoggedIn"))
         {
-            SetBoolean(session, "HasLoggedIn", loginCookieResponse.Value);
+            var loginCookieResponse = Cookie.Retrieve<bool>(request, "QAWA-HasLoggedIn");
+            if (loginCookieResponse.Status is ResponseStatus.Success && loginCookieResponse.HasValue)
+            {
+                SetBoolean(session, "HasLoggedIn", loginCookieResponse.Value);
+            }
         }
 
         var isLoggedIn = GetBoolean(session, "IsLoggedIn");
@@ -55,14 +66,14 @@ public static class Session
 
         if (isLoggedIn)
         {
-            response.Redirect("/Dashboard", true);
+            response.Redirect("/dashboard", true);
             return true;
         }
 
         // ReSharper disable once InvertIf
-        if (hasLoggedIn && request.Path.Value == "/Register")
+        if (hasLoggedIn && request.Path.Value == "/register")
         {
-            response.Redirect("/Login", true);
+            response.Redirect("/login", true);
             return true;
         }
 
@@ -106,7 +117,7 @@ public static class Session
         SetBoolean(session, "IsLoggedIn", true);
         SetBoolean(session, "HasLoggedIn", true);
         SetBoolean(session, "IsFirstDashboardVisit", true);
-        response.Redirect("/Dashboard", true);
+        response.Redirect("/dashboard", true);
     }
 
     public static void Login(ISession session, HttpResponse response)
@@ -115,14 +126,15 @@ public static class Session
         SetBoolean(session, "HasLoggedIn", true);
         Cookie.Store(response, "QAWA-HasLoggedIn", true, DateTimeOffset.UtcNow.AddDays(90), true);
         SetBoolean(session, "IsFirstDashboardVisit", true);
-        response.Redirect("/Dashboard", true);
+        response.Redirect("/dashboard", true);
     }
 
     public static void Logout(ISession session, HttpRequest request, HttpResponse response)
     {
         Cookie.Remove(response, "QAWA-AuthenticationData");
 
+        SetBoolean(session, "IsLogout", true);
         SetBoolean(session, "IsLoggedIn", false);
-        response.Redirect("/Login", true);
+        response.Redirect("/login", true);
     }
 }

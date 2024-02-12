@@ -22,4 +22,9 @@ public class RegisterModel(ILogger logger) : PageModel
 
         // TODO - Finish implementing registration functionality (need to amend database to autoincrement primary key IDs)
     }
+
+    public void OnPostSwitch()
+    {
+        Response.Redirect("/login");
+    }
 }

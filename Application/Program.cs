@@ -6,7 +6,10 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 builder
-    .Services.AddRazorPages()
+    .Services.AddRazorPages(options =>
+    {
+        options.Conventions.AddPageRoute("/dashboard", "/");
+    })
     .Services.AddHsts(options =>
     {
         options.Preload = true;
@@ -35,12 +38,11 @@ DatabaseManager.InitialiseDatabase();
 
 if (app.Environment.IsDevelopment())
 {
-    // TODO - Need to update GitHub actions and Dockerfile/docker-compose.yml to ensure this environment variable is set
     Environment.SetEnvironmentVariable("QAWA-Cookie-Secret", "_zM374b@C9N_v-8?R-5?$-1J");
 }
 else
 {
-    app.UseExceptionHandler("/Error");
+    app.UseExceptionHandler("/error");
     app.UseHsts();
 }
 

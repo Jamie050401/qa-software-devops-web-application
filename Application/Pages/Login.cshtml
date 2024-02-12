@@ -1,4 +1,4 @@
-﻿@page
+﻿@page "/login"
 @model LoginModel
 
 @{
@@ -29,7 +29,7 @@
             <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
             <hr class="my-4">
             <p><small class="text-muted">Don't have an account?</small></p>
-            <p><button type="button" class="btn btn-link btn-sm" onclick="window.location.href='/Register'">Click here to sign-up.</button></p>
+            <form method="POST"><button class="btn btn-link btn-sm" asp-page-handler="Switch" type="submit">Click here to sign-up.</button></form>
         </form>
     </div>
 </div>
