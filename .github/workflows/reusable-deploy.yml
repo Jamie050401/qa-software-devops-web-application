@@ -15,7 +15,7 @@ jobs:
       run: |
         curl -X POST -H "X-API-Key: ${{ secrets.PORTAINER_API_KEY }}" \
         -F "Name=qa-web-application-2" \
-        -F "Env=[{'QAWA-Cookie-Secret': '${{ secrets.QAWA_Cookie_Secret }}'}]" \
+        -F "Env=[{\"name\": \"QAWA-Cookie-Secret\", \"value\": \"${{ secrets.QAWA_Cookie_Secret }}\"}]" \
         -F "file=@./docker-compose.yml" \
         "${{ secrets.PORTAINER_HOST }}/api/stacks/create/standalone/file?endpointId=${{ secrets.PORTAINER_ENV_ID }}"
 
