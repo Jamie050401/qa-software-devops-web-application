@@ -10,6 +10,5 @@ jobs:
     secrets: inherit
 
   Static-Analysis:
-    needs: Build-Test
     uses: ./.github/workflows/reusable-static-analysis.yml
     secrets: inherit
