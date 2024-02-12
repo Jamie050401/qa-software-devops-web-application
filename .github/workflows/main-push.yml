@@ -5,6 +5,10 @@ on:
     branches: [ "main" ]
 
 jobs:
+  Deploy:
+    uses: ./.github/workflows/reusable-deploy.yml
+    secrets: inherit
+
   #Build-Test:
   #  uses: ./.github/workflows/reusable-build-test.yml
   #  secrets: inherit
@@ -19,7 +23,7 @@ jobs:
   #  uses: ./.github/workflows/reusable-publish.yml
   #  secrets: inherit
 
-  Deploy:
+  #Deploy:
   #  needs: Publish
-    uses: ./.github/workflows/reusable-deploy.yml
-    secrets: inherit
+  #  uses: ./.github/workflows/reusable-deploy.yml
+  #  secrets: inherit
