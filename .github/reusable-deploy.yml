@@ -1,0 +1,22 @@
+name: Reusable Deploy
+
+on:
+  workflow_call:
+
+jobs:
+  Deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: "main"
+    - name: Deploy to Portainer
+      uses: datntdev0/action-deploy-to-portainer@v0.1.0
+      with:
+          portainerHost: ${{ secrets.PORTAINER_HOST }}
+          portainerApiKey: ${{ secrets.PORTAINER_API_KEY }}
+          portainerEnvId: ${{ secrets.PORTAINER_ENV_ID }}
+          portainerStackName: 'qa-web-application-2'
+          portainerFilePath: './docker-compose.yml'
+          portainerEnvVars: '[{"QAWA-Cookie-Secret": ${{ secrets.QAWA_Cookie_Secret }}}]'
