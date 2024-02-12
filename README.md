@@ -1,2 +1,3 @@
+[![main](https://github.com/Jamie050401/qa-software-devops-web-application/actions/workflows/main-push.yml/badge.svg)](https://github.com/Jamie050401/qa-software-devops-web-application/actions/workflows/main-push.yml)
 # Web Application
 ...
