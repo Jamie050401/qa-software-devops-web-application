@@ -1,0 +1,20 @@
+name: Reusable Static Analysis
+
+on:
+  workflow_call:
+
+jobs:
+  Static-Analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: "main"
+          fetch-depth: 0
+      - name: Run Qodana
+        uses: JetBrains/qodana-action@v2023.3
+        with:
+          args: --baseline,qodana.sarif.json
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}

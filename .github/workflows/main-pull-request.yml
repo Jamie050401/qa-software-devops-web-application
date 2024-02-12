@@ -8,3 +8,8 @@ jobs:
   Build-Test:
     uses: ./.github/workflows/reusable-build-test.yml
     secrets: inherit
+
+  Static-Analysis:
+    needs: Build-Test
+    uses: ./.github/workflows/reusable-static-analysis.yml
+    secrets: inherit
