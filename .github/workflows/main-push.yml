@@ -6,17 +6,17 @@ on:
 
 jobs:
   Build-Test:
-    uses: ./.github/reusable-workflows/build-test.yml
+    uses: ./.github/workflows/build-test.yml
     with:
       github-workspace: ${{ github.workspace }}
     secrets: inherit
 
   Publish:
     needs: Build-Test
-    uses: ./.github/reusable-workflows/publish.yml
+    uses: ./.github/workflows/publish.yml
     secrets: inherit
 
   #Deploy:
   #  needs: Publish
-  #  uses: ./.github/reusable-workflows/deploy.yml
+  #  uses: ./.github/workflows/deploy.yml
   #  secrets: inherit
