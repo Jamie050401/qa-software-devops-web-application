@@ -5,25 +5,21 @@ on:
     branches: [ "main" ]
 
 jobs:
-  Deploy:
-    uses: ./.github/workflows/reusable-deploy.yml
+  Build-Test:
+    uses: ./.github/workflows/reusable-build-test.yml
     secrets: inherit
 
-  #Build-Test:
-  #  uses: ./.github/workflows/reusable-build-test.yml
-  #  secrets: inherit
+  Static-Analysis:
+    needs: Build-Test
+    uses: ./.github/workflows/reusable-static-analysis.yml
+    secrets: inherit
 
-  #Static-Analysis:
-  #  needs: Build-Test
-  #  uses: ./.github/workflows/reusable-static-analysis.yml
-  #  secrets: inherit
+  Publish:
+    needs: Static-Analysis
+    uses: ./.github/workflows/reusable-publish.yml
+    secrets: inherit
 
-  #Publish:
-  #  needs: Static-Analysis
-  #  uses: ./.github/workflows/reusable-publish.yml
-  #  secrets: inherit
-
-  #Deploy:
-  #  needs: Publish
-  #  uses: ./.github/workflows/reusable-deploy.yml
-  #  secrets: inherit
+  Deploy:
+    needs: Publish
+    uses: ./.github/workflows/reusable-deploy.yml
+    secrets: inherit
