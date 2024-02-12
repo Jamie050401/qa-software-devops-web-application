@@ -13,7 +13,7 @@ jobs:
         ref: "main"
     - name: Install dependencies
       run: |
-        apt install jq -y
+        sudo apt-get install -y jq
     - name: Destroy existing stack
       run: |
         stacks=$(curl -X GET -H "X-API-Key: ${{ secrets.PORTAINER_API_KEY }}" "${{ secrets.PORTAINER_HOST }}/api/stacks")
