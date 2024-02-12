@@ -39,8 +39,8 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
             RoleName = "Default"
         };
 
-        var isUnique = DatabaseManager.Database.UserExistsInDatabase(user.Id);
-        if (!isUnique)
+        var hasUser = DatabaseManager.Database.UserExistsInDatabase(user.Id);
+        if (hasUser)
         {
             notyf.Error("Failed to register user.");
             logger.Information("Registration failure: user already exists in database");
