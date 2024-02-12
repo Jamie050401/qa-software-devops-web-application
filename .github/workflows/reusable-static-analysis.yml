@@ -15,6 +15,10 @@ jobs:
       - name: Run Qodana
         uses: JetBrains/qodana-action@v2023.3
         with:
-          args: --baseline,qodana.sarif.json
+          pr-mode: false
+          args: --baseline,qodana.sarif.json,--apply-fixes
+          push-fixes: pull-request
+          upload-result: true
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
