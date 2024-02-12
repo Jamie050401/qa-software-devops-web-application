@@ -1,0 +1,22 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  Build-Test:
+    uses: ./.github/workflows/reusable/build-test.yml
+    with:
+      github-workspace: ${{ github.workspace }}
+    secrets: inherit
+
+  Publish:
+    needs: Build-Test
+    uses: ./.github/workflows/reusable/publish.yml
+    secrets: inherit
+
+  #Deploy:
+  #  needs: Publish
+  #  uses: ./.github/workflows/resuable/deploy.yml
+  #  secrets: inherit

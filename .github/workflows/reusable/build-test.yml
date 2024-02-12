@@ -1,14 +1,17 @@
-name: Publish
+name: Build/Test
 
 on:
-  pull_request:
-    branches: [ "main" ]
+  workflow_call:
+    inputs:
+      github-workspace:
+        required: true
+        type: string
 
 jobs:
   Build-Test:
     runs-on: ubuntu-latest
     env:
-      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+      NUGET_PACKAGES: ${{ inputs.github-workspace }}/.nuget/packages
     steps:
     - uses: actions/checkout@v4
       with:
