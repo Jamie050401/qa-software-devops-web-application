@@ -19,4 +19,4 @@ jobs:
           portainerEnvId: ${{ secrets.PORTAINER_ENV_ID }}
           portainerStackName: 'qa-web-application-2'
           portainerFilePath: './docker-compose.yml'
-          portainerEnvVars: '[{"QAWA-Cookie-Secret": ${{ secrets.QAWA_Cookie_Secret }}}]'
+          portainerEnvVars: '[{"QAWA-Cookie-Secret": "${{ secrets.QAWA_Cookie_Secret }}"}]'
