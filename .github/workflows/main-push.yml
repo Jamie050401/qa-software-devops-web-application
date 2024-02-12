@@ -14,7 +14,7 @@ jobs:
     uses: ./.github/workflows/reusable-publish.yml
     secrets: inherit
 
-  #Deploy:
-  #  needs: Publish
-  #  uses: ./.github/workflows/reusable-deploy.yml
-  #  secrets: inherit
+  Deploy:
+    needs: Publish
+    uses: ./.github/workflows/reusable-deploy.yml
+    secrets: inherit
