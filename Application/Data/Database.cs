@@ -16,6 +16,61 @@ public class Database
         this.CreateTables();
     }
 
+    public Database(string path)
+    {
+        Directory.CreateDirectory(path);
+        ConnectionString = $"Data Source={path}/database.sqlite";
+        this.CreateTables();
+    }
+
+    public Response<TValue, Error> Create<TValue>(TValue value)
+    {
+        if (value is null)
+        {
+            return Response<TValue, Error>.BadRequestResponse();
+        }
+
+        // Capture type, properties and primary key of model
+        var valueType = value.GetType();
+        var properties = valueType.GetProperties();
+        var id =
+            properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Id")
+            ?? properties.First(propertyInfo => propertyInfo.Name == "Name");
+
+        // Derive table name, headers and values based on model type
+        var tableName = $"{valueType.Name}s";
+        var columnHeaders = properties.Aggregate("", (columnHeaders, propertyInfo) =>
+            columnHeaders == "" ? $"{propertyInfo.Name}" : $"{columnHeaders}, {propertyInfo.Name}");
+        var columnValues = properties.Aggregate("", (columnValues, propertyInfo) =>
+        {
+            var propertyValue = propertyInfo.GetValue(value);
+            switch (propertyValue)
+            {
+                case null:
+                    propertyValue = "NULL";
+                    break;
+                case string:
+                case Guid:
+                    propertyValue = $"\"{propertyValue}\"";
+                    break;
+            }
+
+            return columnValues == ""
+                ? $"{propertyValue}"
+                : $"{columnValues}, {propertyValue}";
+        });
+
+        var sqlCreate = $"""
+                INSERT INTO {tableName} ({columnHeaders})
+                VALUES ({columnValues})
+            """;
+
+        var affected = this.ExecuteNonQuery(sqlCreate);
+        if (affected <= 0) return Response<TValue, Error>.BadRequestResponse();
+        this.AddToCache($"{id.GetValue(value)}", value);
+        return Response<TValue, Error>.OkResponse();
+    }
+
     public Response<Fund, Error> GetFundFromDatabase(Guid fundId)
     {
         var fundInCache = (Fund?)this.GetFromCache($"Fund{fundId}");
