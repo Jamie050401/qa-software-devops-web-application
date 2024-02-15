@@ -49,9 +49,12 @@ public class Database
         var valueType = value.GetType();
         var properties = valueType.GetProperties().Where(propertyInfo =>
             propertyInfo.Name != "Metadata").ToArray();
-        var id =
-            properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Id")
-            ?? properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Name");
+        var id = properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Id");
+        if (operationType is OperationType.Read or OperationType.Delete)
+        {
+            id ??= properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Name")
+                   ?? properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Email");
+        }
 
         if (id is null) return Response<IModel, Error>.BadRequestResponse();
 
