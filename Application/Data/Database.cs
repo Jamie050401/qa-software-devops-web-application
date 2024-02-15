@@ -5,7 +5,6 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Caching.Memory;
 using Models;
 using Newtonsoft.Json;
-using System.Diagnostics;
 using System.Reflection;
 
 public class Database
@@ -27,19 +26,31 @@ public class Database
 
     public Response<IModel, Error> Create(IModel value)
     {
-        return this.Interact(value, OperationType.Create);
+        return this.Interact(OperationType.Create, value);
+    }
+
+    public Response<IModel, Error> Read(IModel value)
+    {
+        return this.Interact(OperationType.Read, value);
     }
 
     public Response<IModel, Error> Update(IModel value)
     {
-        return this.Interact(value, OperationType.Update);
+        return this.Interact(OperationType.Update, value);
     }
 
-    private Response<IModel, Error> Interact(IModel value, OperationType operationType)
+    public Response<IModel, Error> Delete(IModel value)
+    {
+        return this.Interact(OperationType.Delete, value);
+    }
+
+    private Response<IModel, Error> Interact(OperationType operationType, IModel value)
     {
         var valueType = value.GetType();
         var properties = valueType.GetProperties().Where(propertyInfo =>
-            propertyInfo.Name != "Indexes" && propertyInfo.Name != "ForeignKeys").ToArray();
+            propertyInfo.Name != "NonNullable"
+            && propertyInfo.Name != "Indexes"
+            && propertyInfo.Name != "ForeignKeys").ToArray();
         var id =
             properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Id")
             ?? properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Name");
@@ -130,340 +141,6 @@ public class Database
         return propertyValue;
     }
 
-    private enum OperationType
-    {
-        Create,
-        Read,
-        Update,
-        Delete
-    }
-
-    public Response<Fund, Error> GetFundFromDatabase(Guid fundId)
-    {
-        var fundInCache = (Fund?)this.GetFromCache($"Fund{fundId}");
-        if (fundInCache is not null)
-        {
-            return Response<Fund, Error>.OkValueResponse(fundInCache);
-        }
-
-        var sqlGetFromDatabase = $"SELECT * FROM Funds WHERE Id = \"{fundId}\";";
-        var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
-
-        if (!dbResponse.Reader.Read())
-        {
-            return Response<Fund, Error>.NotFoundResponse();
-        }
-
-        var id = dbResponse.Reader.GetGuid(0);
-        var name = dbResponse.Reader.GetString(1);
-        var growthRate = dbResponse.Reader.GetDecimal(2);
-        var charge = dbResponse.Reader.GetDecimal(3);
-        dbResponse.Dispose();
-        var fundInDb = new Fund
-        {
-            Id = id,
-            Name = name,
-            GrowthRate = growthRate,
-            Charge = charge
-        };
-        this.AddToCache($"Fund{fundInDb.Id}", fundInDb);
-
-        return Response<Fund, Error>.OkValueResponse(fundInDb);
-    }
-
-    public bool FundExistsInDatabase(Guid fundId)
-    {
-        var dbResponse = this.GetFundFromDatabase(fundId);
-        return dbResponse.Status is ResponseStatus.Success && dbResponse.HasValue;
-    }
-
-    public void DeleteFundFromDatabase(Guid fundId)
-    {
-        var response = this.GetFundFromDatabase(fundId);
-
-        if (response.Status == ResponseStatus.Error) return;
-
-        var sqlDeleteFromDatabase = $"DELETE FROM Funds WHERE Id = \"{fundId}\";";
-        var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
-        if (affected > 0)
-        {
-            this.DeleteFromCache($"Fund{fundId}");
-        }
-    }
-
-    public void AddFundToDatabase(Fund fund)
-    {
-        string sqlAddToDatabase;
-        var response = this.GetFundFromDatabase(fund.Id);
-        if (response.Status is ResponseStatus.Success && response.HasValue)
-        {
-            sqlAddToDatabase = $"""
-                UPDATE Funds
-                SET Name = "{fund.Id.ToString()}",
-                    GrowthRate = {fund.GrowthRate},
-                    Charge = {fund.Charge}
-                WHERE Id = "{fund.Id.ToString()}";
-            """;
-        }
-        else
-        {
-            sqlAddToDatabase = $"""
-                INSERT INTO Funds (Id, Name, GrowthRate, Charge)
-                VALUES ("{fund.Id.ToString()}", "{fund.Name}", {fund.GrowthRate}, {fund.Charge});
-            """;
-        }
-        var affected = this.ExecuteNonQuery(sqlAddToDatabase);
-        if (affected <= 0) return;
-        this.AddToCache($"Fund{fund.Id}", fund);
-    }
-
-    public Response<Role, Error> GetRoleFromDatabase(string roleName)
-    {
-        var roleInCache = (Role?)this.GetFromCache($"Role{roleName}");
-        if (roleInCache is not null)
-        {
-            return Response<Role, Error>.OkValueResponse(roleInCache);
-        }
-
-        var sqlGetFromDatabase = $"SELECT * FROM Roles WHERE Name = \"{roleName}\";";
-        var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
-
-        if (!dbResponse.Reader.Read())
-        {
-            return Response<Role, Error>.NotFoundResponse();
-        }
-
-        var name = dbResponse.Reader.GetString(0);
-        dbResponse.Dispose();
-        var roleInDb = new Role
-        {
-            Name = name
-        };
-        this.AddToCache($"Role{roleInDb.Name}", roleInDb);
-
-        return Response<Role, Error>.OkValueResponse(roleInDb);
-    }
-
-    public bool RoleExistsInDatabase(string roleName)
-    {
-        var dbResponse = this.GetRoleFromDatabase(roleName);
-        return dbResponse.Status is ResponseStatus.Success && dbResponse.HasValue;
-    }
-
-    public void DeleteRoleFromDatabase(string roleName)
-    {
-        var roleInDb = this.GetRoleFromDatabase(roleName);
-
-        if (roleInDb.Status == ResponseStatus.Error) return;
-
-        var sqlDeleteFromDatabase = $"DELETE FROM Roles WHERE Name = \"{roleName}\";";
-        var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
-        if (affected > 0)
-        {
-            this.DeleteFromCache($"Role{roleName}");
-        }
-    }
-
-    public void AddRoleToDatabase(Role role)
-    {
-        string sqlAddToDatabase;
-        var response = this.GetRoleFromDatabase(role.Name);
-        if (response.Status is ResponseStatus.Success && response.HasValue)
-        {
-            sqlAddToDatabase = $"""
-                UPDATE Roles
-                SET Name = "{role.Name}"
-                WHERE Name = "{role.Name}";
-            """;
-        }
-        else
-        {
-            sqlAddToDatabase = $"""
-                INSERT INTO Roles (Name)
-                VALUES ("{role.Name}");
-            """;
-        }
-        var affected = this.ExecuteNonQuery(sqlAddToDatabase);
-        if (affected <= 0) return;
-        this.AddToCache($"Role{role.Name}", role);
-    }
-
-    public Response<User, Error> GetUserFromDatabase(Guid? userId = null, string? userEmail = null)
-    {
-        if (userId is null && userEmail is null)
-        {
-            return Response<User, Error>.BadRequestResponse();
-        }
-
-        var userInCache = (User?)(this.GetFromCache($"User{userId}") ?? this.GetFromCache($"User{userEmail}"));
-        if (userInCache is not null)
-        {
-            return Response<User, Error>.OkValueResponse(userInCache);
-        }
-
-        var sqlGetFromDatabase = userId is null ? $"SELECT * FROM Users WHERE Email = \"{userEmail}\";" : $"SELECT * FROM Users WHERE Id = \"{userId}\";";
-        var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
-
-        if (!dbResponse.Reader.Read())
-        {
-            return Response<User, Error>.NotFoundResponse();
-        }
-
-        var id = dbResponse.Reader.GetGuid(0);
-        var email = dbResponse.Reader.GetString(1);
-        var password = dbResponse.Reader.GetString(2);
-        var authenticationData = dbResponse.Reader.IsDBNull(3) ? null : JsonConvert.DeserializeObject<AuthenticationData>(dbResponse.Reader.GetString(3));
-        var firstName = dbResponse.Reader.IsDBNull(4) ? null : dbResponse.Reader.GetString(4);
-        var lastName = dbResponse.Reader.IsDBNull(5) ? null : dbResponse.Reader.GetString(5);
-        var roleName = dbResponse.Reader.GetString(6);
-        dbResponse.Dispose();
-        var userInDb = new User
-        {
-            Id = id,
-            Email = email,
-            Password = password,
-            AuthenticationData = authenticationData,
-            FirstName = firstName,
-            LastName = lastName,
-            RoleName = roleName
-        };
-        this.AddToCache($"User{userInDb.Id}", userInDb);
-        this.AddToCache($"User{userInDb.Email}", userInDb);
-
-        return Response<User, Error>.OkValueResponse(userInDb);
-    }
-
-    public bool UserExistsInDatabase(Guid? userId = null, string? userEmail = null)
-    {
-        var dbResponse = this.GetUserFromDatabase(userId, userEmail);
-        return dbResponse.Status is ResponseStatus.Success && dbResponse.HasValue;
-    }
-
-    public void DeleteUserFromDatabase(Guid? userId = null, string? userEmail = null)
-    {
-        if (userId is null && userEmail is null) return;
-
-        var userInDb = this.GetUserFromDatabase(userId, userEmail);
-
-        if (userInDb.Status == ResponseStatus.Error) return;
-
-        var sqlDeleteFromDatabase = userId is null ? $"DELETE FROM Users WHERE Email = \"{userEmail}\";" : $"DELETE FROM Users WHERE Id = \"{userId}\";";
-        var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
-        if (affected <= 0) return;
-        Debug.Assert(userInDb.Value != null, "userInDb.Value != null");
-        this.DeleteFromCache($"User{userInDb.Value.Id}");
-        this.DeleteFromCache($"User{userInDb.Value.Email}");
-    }
-
-    public void AddUserToDatabase(User user)
-    {
-        string sqlAddToDatabase;
-        var response = this.GetUserFromDatabase(user.Id);
-        if (response.Status is ResponseStatus.Success && response.HasValue)
-        {
-            sqlAddToDatabase = $"""
-                UPDATE Users
-                SET Email = "{user.Email}",
-                    Password = "{user.Password}",
-                    AuthenticationData = json_set('{JsonConvert.SerializeObject(user.AuthenticationData)}'),
-                    FirstName = "{user.FirstName}",
-                    LastName = "{user.LastName}",
-                    RoleName = "{user.RoleName}"
-                WHERE Id = "{user.Id.ToString()}";
-            """;
-        }
-        else
-        {
-            sqlAddToDatabase = $"""
-                INSERT INTO Users (Id, Email, Password, AuthenticationData, FirstName, LastName, RoleName)
-                VALUES ("{user.Id.ToString()}", "{user.Email}", "{user.Password}", json_set('{JsonConvert.SerializeObject(user.AuthenticationData)}'), "{user.FirstName}", "{user.LastName}", "{user.RoleName}");
-            """;
-        }
-        var affected = this.ExecuteNonQuery(sqlAddToDatabase);
-        if (affected <= 0) return;
-        this.AddToCache($"User{user.Id}", user);
-        this.AddToCache($"User{user.Email}", user);
-    }
-
-    public Response<Result, Error> GetResultFromDatabase(Guid resultId)
-    {
-        var resultInCache = (Result?)this.GetFromCache($"Result{resultId}");
-        if (resultInCache is not null)
-        {
-            return Response<Result, Error>.OkValueResponse(resultInCache);
-        }
-
-        var sqlGetFromDatabase = $"SELECT * FROM Results WHERE Id = \"{resultId}\";";
-        var dbResponse = this.ExecuteReader(sqlGetFromDatabase);
-
-        if (!dbResponse.Reader.Read())
-        {
-            return Response<Result, Error>.NotFoundResponse();
-        }
-
-        var id = dbResponse.Reader.GetGuid(0);
-        var userId = dbResponse.Reader.GetGuid(1);
-        var totalInvestment = dbResponse.Reader.GetDecimal(2);
-        var projectedValue = dbResponse.Reader.GetDecimal(3);
-        dbResponse.Dispose();
-        var resultInDb = new Result
-        {
-            Id = id,
-            UserId = userId,
-            TotalInvestment = totalInvestment,
-            ProjectedValue = projectedValue
-        };
-        this.AddToCache($"Result{resultInDb.Id}", resultInDb);
-
-        return Response<Result, Error>.OkValueResponse(resultInDb);
-    }
-
-    public bool ResultExistsInDatabase(Guid resultId)
-    {
-        var dbResponse = this.GetResultFromDatabase(resultId);
-        return dbResponse.Status is ResponseStatus.Success && dbResponse.HasValue;
-    }
-
-    public void DeleteResultFromDatabase(Guid resultId)
-    {
-        var resultInDb = this.GetResultFromDatabase(resultId);
-
-        if (resultInDb.Status == ResponseStatus.Error) return;
-
-        var sqlDeleteFromDatabase = $"DELETE FROM Results WHERE Id = \"{resultId}\";";
-        var affected = this.ExecuteNonQuery(sqlDeleteFromDatabase);
-        if (affected > 0)
-        {
-            this.DeleteFromCache($"Result{resultId}");
-        }
-    }
-
-    public void AddResultToDatabase(Result result)
-    {
-        string sqlAddToDatabase;
-        var response = this.GetResultFromDatabase(result.Id);
-        if (response.Status is ResponseStatus.Success && response.HasValue)
-        {
-            sqlAddToDatabase = $"""
-                UPDATE Results
-                SET UserId = "{result.UserId.ToString()}",
-                    TotalInvestment = {result.TotalInvestment},
-                    ProjectedValue = {result.ProjectedValue}
-                WHERE Id = "{result.Id.ToString()}";
-            """;
-        }
-        else
-        {
-            sqlAddToDatabase = $"""
-                INSERT INTO Results (Id, UserId, TotalInvestment, ProjectedValue)
-                VALUES ("{result.Id.ToString()}", {result.UserId.ToString()}, {result.TotalInvestment}, {result.ProjectedValue});
-            """;
-        }
-        var affected = this.ExecuteNonQuery(sqlAddToDatabase);
-        if (affected <= 0) return;
-        this.AddToCache($"Result{result.Id}", result);
-    }
-
     private void CreateTables()
     {
         const string sqlCreateTables = """
@@ -548,6 +225,14 @@ public class Database
 
         Cache.TryGetValue(key, out var value);
         return value;
+    }
+
+    private enum OperationType
+    {
+        Create,
+        Read,
+        Update,
+        Delete
     }
 
     private string? ConnectionString { get; }

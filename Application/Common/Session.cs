@@ -93,7 +93,10 @@ public static class Session
         }
         Debug.Assert(authCookieResponse.Value != null, "cookieResponse.Value != null");
         var authenticationData = authCookieResponse.Value;
-        var dbResponse = DatabaseManager.Database.GetUserFromDatabase(userEmail: authenticationData.Email);
+        var dbResponse = DatabaseManager.Database.Read(new User
+        {
+            Email = authenticationData.Email
+        });
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
             logger.Information($"Login failure: unable to find user matching authentication data stored in cookies");
@@ -101,7 +104,7 @@ public static class Session
             return;
         }
         Debug.Assert(dbResponse.Value != null, "databaseResponse.Value != null");
-        var userInDb = dbResponse.Value;
+        var userInDb = (User)dbResponse.Value;
         var isAuthenticated = userInDb.AuthenticationData is not null &&
                               SecretHasher.Verify(authenticationData.Token, userInDb.AuthenticationData.Token) &&
                               authenticationData.Source == userInDb.AuthenticationData.Source &&
@@ -145,7 +148,7 @@ public static class Session
 
                     authenticationData.Token = SecretHasher.Hash(authenticationData.Token);
                     userInDb.AuthenticationData = authenticationData;
-                    DatabaseManager.Database.AddUserToDatabase(userInDb);
+                    DatabaseManager.Database.Update(userInDb);
                 }
             }
         }

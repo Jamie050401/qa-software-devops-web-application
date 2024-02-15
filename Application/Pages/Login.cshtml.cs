@@ -5,6 +5,7 @@ using Common;
 using Data;
 using ILogger = Serilog.ILogger;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Models;
 using System.Diagnostics;
 
 public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
@@ -30,7 +31,10 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         var isEmailValid = Validate.Email(notyf, email);
         if (!isEmailValid) return;
 
-        var dbResponse = DatabaseManager.Database.GetUserFromDatabase(userEmail: email);
+        var dbResponse = DatabaseManager.Database.Read(new User
+        {
+            Email = email
+        });
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
             notyf.Error("Email or password was incorrect, please try again.");
@@ -39,7 +43,8 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         }
 
         Debug.Assert(dbResponse.Value != null, "dbResponse.Value != null");
-        var userInDb = dbResponse.Value;
+        var userInDb = (User)dbResponse.Value;
+        Debug.Assert(userInDb.Password != null, "userInDb.Password != null");
         if (email != userInDb.Email || !SecretHasher.Verify(password, userInDb.Password))
         {
             notyf.Error("Email or password was incorrect, please try again.");

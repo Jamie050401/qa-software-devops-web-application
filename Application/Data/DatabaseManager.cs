@@ -6,14 +6,11 @@ public static class DatabaseManager
 {
     public static void InitialiseDatabase()
     {
-        if (Database.RoleExistsInDatabase("Default") ||
-            Database.RoleExistsInDatabase("Administrator")) return;
-
-        Database.AddRoleToDatabase(new Role
+        Database.Create(new Role
         {
             Name = "Default"
         });
-        Database.AddRoleToDatabase(new Role
+        Database.Create(new Role
         {
             Name = "Administrator"
         });

@@ -10,6 +10,7 @@ public interface IModel
 {
     public Guid Id { get; }
 
+    public IList<string> NonNullable { get; }
     public IList<string> Indexes { get; }
     public IDictionary<string, ForeignKey> ForeignKeys { get; }
 }
