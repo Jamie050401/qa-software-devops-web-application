@@ -1,8 +1,8 @@
-﻿using Application.Common;
+﻿namespace Application.Models;
 
-namespace Application.Models;
+using Common;
 
-public class User
+public class User : IModel
 {
     public Guid Id { get; init; }
     public required string Email { get; init; }
@@ -11,4 +11,7 @@ public class User
     public string? FirstName { get; init; }
     public string? LastName { get; init; }
     public required string RoleName { get; init; }
+
+    public IList<string> Indexes { get; } = new List<string>();
+    public IDictionary<string, ForeignKey> ForeignKeys { get; } = new Dictionary<string, ForeignKey>();
 }

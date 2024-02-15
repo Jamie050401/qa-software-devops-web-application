@@ -25,43 +25,62 @@ public class Database
         this.CreateTables();
     }
 
-    public Response<TValue, Error> CreateUpdate<TValue>(TValue value, bool isUpdate = false)
+    public Response<IModel, Error> Create(IModel value)
     {
-        if (value is null) return Response<TValue, Error>.BadRequestResponse();
+        return this.Interact(value, OperationType.Create);
+    }
 
+    public Response<IModel, Error> Update(IModel value)
+    {
+        return this.Interact(value, OperationType.Update);
+    }
+
+    private Response<IModel, Error> Interact(IModel value, OperationType operationType)
+    {
         var valueType = value.GetType();
-        var properties = valueType.GetProperties();
+        var properties = valueType.GetProperties().Where(propertyInfo =>
+            propertyInfo.Name != "Indexes" && propertyInfo.Name != "ForeignKeys").ToArray();
         var id =
             properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Id")
             ?? properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Name");
 
-        if (id is null) return Response<TValue, Error>.BadRequestResponse();
+        if (id is null) return Response<IModel, Error>.BadRequestResponse();
 
         var tableName = $"{valueType.Name}s";
-        string sql;
-        if (isUpdate)
+        var sql = operationType switch
         {
-            var columns = GetColumns(value, properties);
-            sql = $"""
-                UPDATE {tableName}
-                SET {columns}
-                WHERE {id.Name} = "{id.GetValue(value)}";
-            """;
-        }
-        else
-        {
-            var columnHeaders = GetColumnHeaders(properties);
-            var columnValues = GetColumnValues(value, properties);
-            sql = $"""
-                INSERT INTO {tableName} ({columnHeaders})
-                VALUES ({columnValues});
-            """;
-        }
+            OperationType.Create => GetCreateSql(value, properties, tableName),
+            OperationType.Read => "",
+            OperationType.Update => GetUpdateSql(value, properties, tableName, id),
+            OperationType.Delete => "",
+            _ => throw new ArgumentOutOfRangeException(nameof(operationType), operationType, null)
+        };
 
         var affected = this.ExecuteNonQuery(sql);
-        if (affected <= 0) return Response<TValue, Error>.BadRequestResponse();
+        if (affected <= 0) return Response<IModel, Error>.BadRequestResponse();
         this.AddToCache($"{id.GetValue(value)}", value);
-        return Response<TValue, Error>.OkResponse();
+        return Response<IModel, Error>.OkResponse();
+    }
+
+    private static string GetCreateSql(IModel value, IEnumerable<PropertyInfo> properties, string tableName)
+    {
+        properties = properties as PropertyInfo[] ?? properties.ToArray();
+        var columnHeaders = GetColumnHeaders(properties);
+        var columnValues = GetColumnValues(value, properties);
+        return $"""
+            INSERT INTO {tableName} ({columnHeaders})
+            VALUES ({columnValues});
+        """;
+    }
+
+    private static string GetUpdateSql(IModel value, IEnumerable<PropertyInfo> properties, string tableName, PropertyInfo id)
+    {
+        var columns = GetColumns(value, properties);
+        return $"""
+            UPDATE {tableName}
+            SET {columns}
+            WHERE {id.Name} = "{id.GetValue(value)}";
+        """;
     }
 
     private static string GetColumnHeaders(IEnumerable<PropertyInfo> properties)
@@ -70,7 +89,7 @@ public class Database
             columnHeaders == "" ? $"{propertyInfo.Name}" : $"{columnHeaders}, {propertyInfo.Name}");
     }
 
-    private static string GetColumnValues<TValue>(TValue value, IEnumerable<PropertyInfo> properties)
+    private static string GetColumnValues(IModel value, IEnumerable<PropertyInfo> properties)
     {
         return properties.Aggregate("", (columnValues, propertyInfo) =>
         {
@@ -81,7 +100,7 @@ public class Database
         });
     }
 
-    private static string GetColumns<TValue>(TValue value, IEnumerable<PropertyInfo> properties)
+    private static string GetColumns(IModel value, IEnumerable<PropertyInfo> properties)
     {
         return properties.Aggregate("", (columns, propertyInfo) =>
         {
@@ -92,7 +111,7 @@ public class Database
         });
     }
 
-    private static object GetPropertyValue<TValue>(TValue value, PropertyInfo propertyInfo)
+    private static object GetPropertyValue(IModel value, PropertyInfo propertyInfo)
     {
         var propertyValue = propertyInfo.GetValue(value);
         switch (propertyValue)
@@ -109,6 +128,14 @@ public class Database
                 break;
         }
         return propertyValue;
+    }
+
+    private enum OperationType
+    {
+        Create,
+        Read,
+        Update,
+        Delete
     }
 
     public Response<Fund, Error> GetFundFromDatabase(Guid fundId)
@@ -448,8 +475,11 @@ public class Database
             );
            
             CREATE TABLE IF NOT EXISTS Roles (
-                Name TEXT PRIMARY KEY NOT NULL
+                Id TEXT PRIMARY KEY NOT NULL,
+                Name TEXT NOT NULL
             );
+            
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_Name on Roles(Name);
            
             CREATE TABLE IF NOT EXISTS Users (
                 Id TEXT PRIMARY KEY NOT NULL,

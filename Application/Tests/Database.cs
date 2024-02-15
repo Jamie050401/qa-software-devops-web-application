@@ -29,9 +29,9 @@ public class DatabaseCreate
             Charge = 0.0M
         };
 
-        var actual = _database.CreateUpdate(fund);
+        var actual = _database.Create(fund);
 
-        Assert.That(actual, Is.EqualTo(Response<Fund, Error>.OkResponse()));
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
 
     [Test, Order(2)]
@@ -42,9 +42,9 @@ public class DatabaseCreate
             Name = RoleName
         };
 
-        var actual = _database.CreateUpdate(role);
+        var actual = _database.Create(role);
 
-        Assert.That(actual, Is.EqualTo(Response<Role, Error>.OkResponse()));
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
 
     [Test, Order(3)]
@@ -58,9 +58,9 @@ public class DatabaseCreate
             RoleName = RoleName
         };
 
-        var actual = _database.CreateUpdate(user);
+        var actual = _database.Create(user);
 
-        Assert.That(actual, Is.EqualTo(Response<User, Error>.OkResponse()));
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
 
     [Test, Order(4)]
@@ -84,9 +84,9 @@ public class DatabaseCreate
             RoleName = RoleName
         };
 
-        var actual = _database.CreateUpdate(user);
+        var actual = _database.Create(user);
 
-        Assert.That(actual, Is.EqualTo(Response<User, Error>.OkResponse()));
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
 
     [Test, Order(5)]
@@ -100,9 +100,9 @@ public class DatabaseCreate
             ProjectedValue = 0.0M
         };
 
-        var actual = _database.CreateUpdate(result);
+        var actual = _database.Create(result);
 
-        Assert.That(actual, Is.EqualTo(Response<Result, Error>.OkResponse()));
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
 }
 
@@ -120,25 +120,25 @@ public class DatabaseUpdate
         File.Delete("Tests/updateDatabase.sqlite");
         _database = new DatabaseLogic("Tests", "updateDatabase");
 
-        _database.CreateUpdate(new Fund
+        _database.Create(new Fund
         {
             Id = _fundGuid,
             Name = "Test Fund",
             GrowthRate = 0.0M,
             Charge = 0.0M
         });
-        _database.CreateUpdate(new Role
+        _database.Create(new Role
         {
             Name = RoleName
         });
-        _database.CreateUpdate(new User
+        _database.Create(new User
         {
             Id = _userGuid,
             Email = "test@user.com",
             Password = "TestUser",
             RoleName = RoleName
         });
-        _database.CreateUpdate(new Result
+        _database.Create(new Result
         {
             Id = _resultGuid,
             UserId = _userGuid,
@@ -158,8 +158,8 @@ public class DatabaseUpdate
             Charge = 1.0M
         };
 
-        var actual = _database.CreateUpdate(fund, true);
+        var actual = _database.Update(fund);
 
-        Assert.That(actual, Is.EqualTo(Response<Fund, Error>.OkResponse()));
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
 }
