@@ -31,22 +31,22 @@ public class Response<TValue, TError>(ResponseStatus status)
         };
     }
 
-    public static Response<TValue, Error> BadRequestResponse()
+    public static Response<TValue, Error> BadRequestResponse(string errorMessage = "Bad request")
     {
         var response = new Response<TValue, Error>(ResponseStatus.Error);
         response.AddError(new Error(400)
         {
-            ErrorMessage = "Bad request"
+            ErrorMessage = errorMessage
         });
         return response;
     }
 
-    public static Response<TValue, Error> NotFoundResponse()
+    public static Response<TValue, Error> NotFoundResponse(string errorMessage = "Not found")
     {
         var response = new Response<TValue, Error>(ResponseStatus.Error);
         response.AddError(new Error(404)
         {
-            ErrorMessage = "Not found"
+            ErrorMessage = errorMessage
         });
         return response;
     }

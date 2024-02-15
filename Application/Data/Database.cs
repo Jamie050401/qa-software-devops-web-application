@@ -51,7 +51,7 @@ public class Database
             propertyInfo.Name != "Metadata").ToArray();
         var id = GetId(operationType, properties);
 
-        if (id is null) return Response<IModel, Error>.BadRequestResponse();
+        if (id is null) return Response<IModel, Error>.BadRequestResponse("Unable to determine Id from supplied model");
 
         var tableName = $"{valueType.Name}s";
         var sql = operationType switch
@@ -64,7 +64,7 @@ public class Database
         };
 
         var affected = this.ExecuteNonQuery(sql);
-        if (affected <= 0) return Response<IModel, Error>.BadRequestResponse();
+        if (affected <= 0) return Response<IModel, Error>.BadRequestResponse("Database query failed");
         this.AddToCache($"{id.GetValue(value)}", value);
         return Response<IModel, Error>.OkResponse();
     }
