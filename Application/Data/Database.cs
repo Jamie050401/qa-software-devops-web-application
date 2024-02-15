@@ -41,14 +41,7 @@ public class Database
         string sql;
         if (isUpdate)
         {
-            var columns = properties.Aggregate("", (columns, propertyInfo) =>
-            {
-                var propertyValue = GetPropertyValue(value, propertyInfo);
-                return columns == ""
-                    ? $"{propertyInfo.Name} = {propertyValue}"
-                    : $"{columns},{Environment.NewLine}{propertyInfo.Name} = {propertyValue}";
-            });
-
+            var columns = GetColumns(value, properties);
             sql = $"""
                 UPDATE {tableName}
                 SET {columns}
@@ -85,6 +78,17 @@ public class Database
             return columnValues == ""
                 ? $"{propertyValue}"
                 : $"{columnValues}, {propertyValue}";
+        });
+    }
+
+    private static string GetColumns<TValue>(TValue value, IEnumerable<PropertyInfo> properties)
+    {
+        return properties.Aggregate("", (columns, propertyInfo) =>
+        {
+            var propertyValue = GetPropertyValue(value, propertyInfo);
+            return columns == ""
+                ? $"{propertyInfo.Name} = {propertyValue}"
+                : $"{columns},{Environment.NewLine}{propertyInfo.Name} = {propertyValue}";
         });
     }
 
