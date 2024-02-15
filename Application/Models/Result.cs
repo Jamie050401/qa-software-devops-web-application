@@ -7,7 +7,5 @@ public class Result : IModel
     public decimal TotalInvestment { get; init; }
     public decimal ProjectedValue { get; init; }
 
-    public IList<string> NonNullable { get; } = new List<string>();
-    public IList<string> Indexes { get; } = new List<string>();
-    public IDictionary<string, ForeignKey> ForeignKeys { get; } = new Dictionary<string, ForeignKey>();
+    public Metadata Metadata { get; } = new();
 }

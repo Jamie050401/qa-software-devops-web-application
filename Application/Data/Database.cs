@@ -48,9 +48,7 @@ public class Database
     {
         var valueType = value.GetType();
         var properties = valueType.GetProperties().Where(propertyInfo =>
-            propertyInfo.Name != "NonNullable"
-            && propertyInfo.Name != "Indexes"
-            && propertyInfo.Name != "ForeignKeys").ToArray();
+            propertyInfo.Name != "Metadata").ToArray();
         var id =
             properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Id")
             ?? properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Name");

@@ -12,7 +12,5 @@ public class User : IModel
     public string? LastName { get; init; }
     public string? RoleName { get; init; }
 
-    public IList<string> NonNullable { get; } = new List<string>();
-    public IList<string> Indexes { get; } = new List<string>();
-    public IDictionary<string, ForeignKey> ForeignKeys { get; } = new Dictionary<string, ForeignKey>();
+    public Metadata Metadata { get; } = new();
 }
