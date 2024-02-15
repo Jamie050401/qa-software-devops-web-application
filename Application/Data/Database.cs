@@ -49,12 +49,7 @@ public class Database
         var valueType = value.GetType();
         var properties = valueType.GetProperties().Where(propertyInfo =>
             propertyInfo.Name != "Metadata").ToArray();
-        var id = properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Id");
-        if (operationType is OperationType.Read or OperationType.Delete)
-        {
-            id ??= properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Name")
-                   ?? properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Email");
-        }
+        var id = GetId(operationType, properties);
 
         if (id is null) return Response<IModel, Error>.BadRequestResponse();
 
@@ -72,6 +67,19 @@ public class Database
         if (affected <= 0) return Response<IModel, Error>.BadRequestResponse();
         this.AddToCache($"{id.GetValue(value)}", value);
         return Response<IModel, Error>.OkResponse();
+    }
+
+    private static PropertyInfo? GetId(OperationType operationType, IEnumerable<PropertyInfo> properties)
+    {
+        properties = properties as PropertyInfo[] ?? properties.ToArray();
+        var id = properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Id");
+        if (operationType is OperationType.Read or OperationType.Delete)
+        {
+            id ??= properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Name")
+                   ?? properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Email");
+        }
+
+        return id;
     }
 
     private static string GetCreateSql(IModel value, IEnumerable<PropertyInfo> properties, string tableName)
