@@ -6,6 +6,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Models;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using System.Reflection;
 
 public class Database
 {
@@ -16,59 +17,94 @@ public class Database
         this.CreateTables();
     }
 
-    public Database(string path)
+    public Database(string path, string? name = null)
     {
+        name ??= "database";
         Directory.CreateDirectory(path);
-        ConnectionString = $"Data Source={path}/database.sqlite";
+        ConnectionString = $"Data Source={path}/{name}.sqlite";
         this.CreateTables();
     }
 
-    public Response<TValue, Error> Create<TValue>(TValue value)
+    public Response<TValue, Error> CreateUpdate<TValue>(TValue value, bool isUpdate = false)
     {
-        if (value is null)
-        {
-            return Response<TValue, Error>.BadRequestResponse();
-        }
+        if (value is null) return Response<TValue, Error>.BadRequestResponse();
 
-        // Capture type, properties and primary key of model
         var valueType = value.GetType();
         var properties = valueType.GetProperties();
         var id =
             properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Id")
-            ?? properties.First(propertyInfo => propertyInfo.Name == "Name");
+            ?? properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Name");
 
-        // Derive table name, headers and values based on model type
+        if (id is null) return Response<TValue, Error>.BadRequestResponse();
+
         var tableName = $"{valueType.Name}s";
-        var columnHeaders = properties.Aggregate("", (columnHeaders, propertyInfo) =>
-            columnHeaders == "" ? $"{propertyInfo.Name}" : $"{columnHeaders}, {propertyInfo.Name}");
-        var columnValues = properties.Aggregate("", (columnValues, propertyInfo) =>
+        string sql;
+        if (isUpdate)
         {
-            var propertyValue = propertyInfo.GetValue(value);
-            switch (propertyValue)
+            var columns = properties.Aggregate("", (columns, propertyInfo) =>
             {
-                case null:
-                    propertyValue = "NULL";
-                    break;
-                case string:
-                case Guid:
-                    propertyValue = $"\"{propertyValue}\"";
-                    break;
-            }
+                var propertyValue = GetPropertyValue(value, propertyInfo);
+                return columns == ""
+                    ? $"{propertyInfo.Name} = {propertyValue}"
+                    : $"{columns},{Environment.NewLine}{propertyInfo.Name} = {propertyValue}";
+            });
 
+            sql = $"""
+                UPDATE {tableName}
+                SET {columns}
+                WHERE {id.Name} = "{id.GetValue(value)}";
+            """;
+        }
+        else
+        {
+            var columnHeaders = GetColumnHeaders(properties);
+            var columnValues = GetColumnValues(value, properties);
+            sql = $"""
+                INSERT INTO {tableName} ({columnHeaders})
+                VALUES ({columnValues});
+            """;
+        }
+
+        var affected = this.ExecuteNonQuery(sql);
+        if (affected <= 0) return Response<TValue, Error>.BadRequestResponse();
+        this.AddToCache($"{id.GetValue(value)}", value);
+        return Response<TValue, Error>.OkResponse();
+    }
+
+    private static string GetColumnHeaders(IEnumerable<PropertyInfo> properties)
+    {
+        return properties.Aggregate("", (columnHeaders, propertyInfo) =>
+            columnHeaders == "" ? $"{propertyInfo.Name}" : $"{columnHeaders}, {propertyInfo.Name}");
+    }
+
+    private static string GetColumnValues<TValue>(TValue value, IEnumerable<PropertyInfo> properties)
+    {
+        return properties.Aggregate("", (columnValues, propertyInfo) =>
+        {
+            var propertyValue = GetPropertyValue(value, propertyInfo);
             return columnValues == ""
                 ? $"{propertyValue}"
                 : $"{columnValues}, {propertyValue}";
         });
+    }
 
-        var sqlCreate = $"""
-                INSERT INTO {tableName} ({columnHeaders})
-                VALUES ({columnValues})
-            """;
-
-        var affected = this.ExecuteNonQuery(sqlCreate);
-        if (affected <= 0) return Response<TValue, Error>.BadRequestResponse();
-        this.AddToCache($"{id.GetValue(value)}", value);
-        return Response<TValue, Error>.OkResponse();
+    private static object GetPropertyValue<TValue>(TValue value, PropertyInfo propertyInfo)
+    {
+        var propertyValue = propertyInfo.GetValue(value);
+        switch (propertyValue)
+        {
+            case null:
+                propertyValue = "NULL";
+                break;
+            case string:
+            case Guid:
+                propertyValue = $"\"{propertyValue}\"";
+                break;
+            case AuthenticationData:
+                propertyValue = $"json_set('{JsonConvert.SerializeObject(propertyValue)}')";
+                break;
+        }
+        return propertyValue;
     }
 
     public Response<Fund, Error> GetFundFromDatabase(Guid fundId)
