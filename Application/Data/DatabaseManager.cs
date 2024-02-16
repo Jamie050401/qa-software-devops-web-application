@@ -1,19 +1,27 @@
 ﻿namespace Application.Data;
 
+using Common;
 using Models;
 
 public static class DatabaseManager
 {
     public static void InitialiseDatabase()
     {
-        Database.Create(new Role
-        {
-            Name = "Default"
-        });
-        Database.Create(new Role
-        {
-            Name = "Administrator"
-        });
+        var dbResponse = Database.Read("Name", "Default", "Role");
+        if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
+            Database.Create(new Role
+            {
+                Id = Guid.NewGuid(),
+                Name = "Default"
+            });
+
+        dbResponse = Database.Read("Name", "Administrator", "Role");
+        if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
+            Database.Create(new Role
+            {
+                Id = Guid.NewGuid(),
+                Name = "Administrator"
+            });
 
         // TODO - Populate database with initial funds
     }

@@ -86,7 +86,7 @@ public class Database
             OperationType.Create => GetCreateSql(value, properties, tableName),
             OperationType.Read => GetReadSql(value, tableName, id),
             OperationType.Update => GetUpdateSql(value, properties, tableName, id),
-            OperationType.Delete => "",
+            OperationType.Delete => GetDeleteSql(value, tableName, id),
             _ => throw new ArgumentOutOfRangeException(nameof(operationType), operationType, null)
         };
 
@@ -196,6 +196,12 @@ public class Database
         var conditionValue = GetConditionValue(value, id);
         var columns = GetColumns(value, properties);
         return $"UPDATE {tableName} SET {columns} WHERE {id.Name} = {conditionValue};";
+    }
+
+    private static string GetDeleteSql(IModel value, string tableName, PropertyInfo id)
+    {
+        var conditionValue = GetConditionValue(value, id);
+        return $"DELETE FROM {tableName} WHERE {id.Name} = {conditionValue}";
     }
 
     private static object? GetConditionValue(IModel value, PropertyInfo property)
