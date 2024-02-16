@@ -132,12 +132,11 @@ public class Database
 
         if (id is not null)
         {
-            var subIdValue = id.GetValue(value);
-            if (subIdValue is null) return null;
+            var idValue = id.GetValue(value);
+            if (idValue is null) return null;
 
-            var propertyDefault = Activator.CreateInstance(id.PropertyType);
-            var propertyValue = id.GetValue(value);
-            if (propertyValue == propertyDefault) id = null;
+            var defaultValue = Activator.CreateInstance(id.PropertyType);
+            if (idValue == defaultValue) id = null;
         }
 
         if (operationType is not (OperationType.Read or OperationType.Delete)) return id;
@@ -162,9 +161,8 @@ public class Database
                     subId = string.IsNullOrEmpty(val) ? null : subId;
                     break;
                 default:
-                    var propertyDefault = Activator.CreateInstance(subId.PropertyType);
-                    var propertyValue = subId.GetValue(value);
-                    if (propertyValue == propertyDefault) subId = null;
+                    var defaultValue = Activator.CreateInstance(subId.PropertyType);
+                    if (subIdValue == defaultValue) subId = null;
                     break;
             }
         }
