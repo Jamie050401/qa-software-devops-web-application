@@ -1,12 +1,11 @@
-﻿using System.Diagnostics;
-
-namespace Application.Data;
+﻿namespace Application.Data;
 
 using Common;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Caching.Memory;
 using Models;
 using Newtonsoft.Json;
+using System.Diagnostics;
 using System.Reflection;
 
 public class Database
@@ -75,7 +74,8 @@ public class Database
     {
         var valueType = value.GetType();
         var properties = valueType.GetProperties().Where(propertyInfo =>
-            propertyInfo.Name != "Metadata").ToArray();
+            propertyInfo.Name != "Metadata");
+        properties = properties as PropertyInfo[] ?? properties.ToArray();
         var id = GetId(operationType, value, properties);
 
         if (id is null) return Response<IModel, Error>.BadRequestResponse("Unable to determine Id from supplied model");
