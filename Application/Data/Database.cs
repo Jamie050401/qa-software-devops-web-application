@@ -99,9 +99,16 @@ public class Database
                 if (affected <= 0)
                     return Response<IModel, Error>.BadRequestResponse("Database query failed");
 
-                this.AddToCache($"{id.GetValue(value)}", value);
+                if (operationType is OperationType.Delete)
+                    this.DeleteFromCache($"{id.GetValue(value)}");
+                else
+                    this.AddToCache($"{id.GetValue(value)}", value);
                 return Response<IModel, Error>.OkResponse();
             case OperationType.Read:
+                var valueInCache = (IModel?)this.GetFromCache($"{id.GetValue(value)}");
+                if (valueInCache is not null)
+                    return Response<IModel, Error>.OkValueResponse(valueInCache);
+
                 var dbResponse = this.ExecuteReader(sql);
                 if (!dbResponse.Reader.Read())
                     return Response<IModel, Error>.NotFoundResponse($"{id.GetValue(value)} does not exist within the database");
