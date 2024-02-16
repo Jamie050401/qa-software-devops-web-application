@@ -1,4 +1,6 @@
-﻿namespace Application.Data;
+﻿using System.Diagnostics;
+
+namespace Application.Data;
 
 using Common;
 using Microsoft.Data.Sqlite;
@@ -31,17 +33,12 @@ public class Database
 
     public Response<IModel, Error> Read(string propertyName, object propertyValue, string modelTypeName)
     {
-        var value = (IModel?)Activator.CreateInstance("Application", $"Application.Models.{modelTypeName}")?.Unwrap();
+        var valueResponse = GetValue(propertyName, propertyValue, modelTypeName);
 
-        if (value is null) return Response<IModel, Error>.BadRequestResponse($"Unable to instantiate {modelTypeName}");
+        if (valueResponse.Status is ResponseStatus.Error || !valueResponse.HasValue) return valueResponse;
 
-        var propertyInfo = value.GetType().GetProperty(propertyName);
-
-        if (propertyInfo is null || !propertyInfo.CanWrite) return Response<IModel, Error>.BadRequestResponse($"Unable to find property {propertyName}");
-
-        propertyInfo.SetValue(value, propertyValue);
-
-        return this.Interact(value, OperationType.Read);
+        Debug.Assert(valueResponse.Value != null, "valueResponse.Value != null");
+        return this.Interact(valueResponse.Value, OperationType.Read);
     }
 
     public Response<IModel, Error> Update(IModel value)
@@ -51,6 +48,16 @@ public class Database
 
     public Response<IModel, Error> Delete(string propertyName, object propertyValue, string modelTypeName)
     {
+        var valueResponse = GetValue(propertyName, propertyValue, modelTypeName);
+
+        if (valueResponse.Status is ResponseStatus.Error || !valueResponse.HasValue) return valueResponse;
+
+        Debug.Assert(valueResponse.Value != null, "valueResponse.Value != null");
+        return this.Interact(valueResponse.Value, OperationType.Delete);
+    }
+
+    private static Response<IModel, Error> GetValue(string propertyName, object propertyValue, string modelTypeName)
+    {
         var value = (IModel?)Activator.CreateInstance("Application", $"Application.Models.{modelTypeName}")?.Unwrap();
 
         if (value is null) return Response<IModel, Error>.BadRequestResponse($"Unable to instantiate {modelTypeName}");
@@ -61,7 +68,7 @@ public class Database
 
         propertyInfo.SetValue(value, propertyValue);
 
-        return this.Interact(value, OperationType.Delete);
+        return Response<IModel, Error>.OkValueResponse(value);
     }
 
     private Response<IModel, Error> Interact(IModel value, OperationType operationType)
