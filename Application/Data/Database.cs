@@ -59,7 +59,7 @@ public class Database
     {
         var value = (IModel?)Activator.CreateInstance("Application", $"Application.Models.{modelTypeName}")?.Unwrap();
 
-        if (value is null) return Response<IModel, Error>.BadRequestResponse($"Unable to instantiate {modelTypeName}");
+        if (value is null) return Response<IModel, Error>.BadRequestResponse($"Unable to instantiate Application.Models.{modelTypeName}");
 
         var propertyInfo = value.GetType().GetProperty(propertyName);
 
@@ -84,16 +84,45 @@ public class Database
         var sql = operationType switch
         {
             OperationType.Create => GetCreateSql(value, properties, tableName),
-            OperationType.Read => "",
+            OperationType.Read => GetReadSql(value, tableName, id),
             OperationType.Update => GetUpdateSql(value, properties, tableName, id),
             OperationType.Delete => "",
             _ => throw new ArgumentOutOfRangeException(nameof(operationType), operationType, null)
         };
 
-        var affected = this.ExecuteNonQuery(sql);
-        if (affected <= 0) return Response<IModel, Error>.BadRequestResponse("Database query failed");
-        this.AddToCache($"{id.GetValue(value)}", value);
-        return Response<IModel, Error>.OkResponse();
+        switch (operationType)
+        {
+            case OperationType.Create:
+            case OperationType.Update:
+            case OperationType.Delete:
+                var affected = this.ExecuteNonQuery(sql);
+                if (affected <= 0)
+                    return Response<IModel, Error>.BadRequestResponse("Database query failed");
+
+                this.AddToCache($"{id.GetValue(value)}", value);
+                return Response<IModel, Error>.OkResponse();
+            case OperationType.Read:
+                var dbResponse = this.ExecuteReader(sql);
+                if (!dbResponse.Reader.Read())
+                    return Response<IModel, Error>.NotFoundResponse($"{id.GetValue(value)} does not exist within the database");
+
+                var propertyValues = new object[properties.Count()];
+                dbResponse.Reader.GetValues(propertyValues);
+                dbResponse.Dispose();
+
+                var valueInDb = (IModel?)Activator.CreateInstance("Application", $"Application.Models.{valueType.Name}")?.Unwrap();
+                if (valueInDb is null)
+                    return Response<IModel, Error>.BadRequestResponse($"Unable to instantiate Application.Models.{valueType.Name}");
+
+                foreach (var property in properties.Zip(propertyValues, Tuple.Create))
+                {
+                    GetDatabaseValue(valueInDb, property);
+                }
+                this.AddToCache($"{valueInDb.Id}", valueInDb);
+                return Response<IModel, Error>.OkValueResponse(valueInDb);
+            default:
+                throw new ArgumentOutOfRangeException(nameof(operationType), operationType, null);
+        }
     }
 
     private static PropertyInfo? GetId(OperationType operationType, IModel value, IEnumerable<PropertyInfo> properties)
@@ -103,6 +132,9 @@ public class Database
 
         if (id is not null)
         {
+            var subIdValue = id.GetValue(value);
+            if (subIdValue is null) return null;
+
             var propertyDefault = Activator.CreateInstance(id.PropertyType);
             var propertyValue = id.GetValue(value);
             if (propertyValue == propertyDefault) id = null;
@@ -113,17 +145,28 @@ public class Database
         PropertyInfo? subId = null;
         subId = value.GetType().Name switch
         {
-            "Application.Models.Role" => properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Name"),
-            "Application.Models.User" => properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Email"),
+            "Role" => properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Name"),
+            "User" => properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Email"),
             _ => subId
         };
 
         // ReSharper disable once InvertIf
         if (subId is not null)
         {
-            var propertyDefault = Activator.CreateInstance(subId.PropertyType);
-            var propertyValue = subId.GetValue(value);
-            if (propertyValue == propertyDefault) subId = null;
+            var subIdValue = subId.GetValue(value);
+            if (subIdValue is null) return id;
+
+            switch (subIdValue)
+            {
+                case string val:
+                    subId = string.IsNullOrEmpty(val) ? null : subId;
+                    break;
+                default:
+                    var propertyDefault = Activator.CreateInstance(subId.PropertyType);
+                    var propertyValue = subId.GetValue(value);
+                    if (propertyValue == propertyDefault) subId = null;
+                    break;
+            }
         }
 
         return subId ?? id;
@@ -140,20 +183,36 @@ public class Database
         """;
     }
 
+    private static string GetReadSql(IModel value, string tableName, PropertyInfo id)
+    {
+        var conditionValue = GetConditionValue(value, id);
+        return $"""
+            SELECT * FROM {tableName}
+            WHERE {id.Name} = {conditionValue};
+        """;
+    }
+
     private static string GetUpdateSql(IModel value, IEnumerable<PropertyInfo> properties, string tableName, PropertyInfo id)
     {
-        var conditionValue = id.GetValue(value);
-        conditionValue = conditionValue switch
-        {
-            string or Guid => $"\"{conditionValue}\"",
-            _ => conditionValue
-        };
+        var conditionValue = GetConditionValue(value, id);
         var columns = GetColumns(value, properties);
         return $"""
             UPDATE {tableName}
             SET {columns}
             WHERE {id.Name} = {conditionValue};
         """;
+    }
+
+    private static object? GetConditionValue(IModel value, PropertyInfo property)
+    {
+        var conditionValue = property.GetValue(value);
+        conditionValue = conditionValue switch
+        {
+            string or Guid => $"\"{conditionValue}\"",
+            _ => conditionValue
+        };
+
+        return conditionValue;
     }
 
     private static string GetColumnHeaders(IEnumerable<PropertyInfo> properties)
@@ -201,6 +260,24 @@ public class Database
                 break;
         }
         return propertyValue;
+    }
+
+    private static void GetDatabaseValue(IModel valueInDb, Tuple<PropertyInfo, object> property)
+    {
+        if (property.Item2 is DBNull)
+        {
+            property.Item1.SetValue(valueInDb, null);
+        }
+        else
+        {
+            var propertyValue = property.Item1.PropertyType.Name switch
+            {
+                "Guid" => Guid.Parse((string)property.Item2),
+                "AuthenticationData" => JsonConvert.DeserializeObject<AuthenticationData>((string)property.Item2),
+                _ => Convert.ChangeType(property.Item2, property.Item1.PropertyType)
+            };
+            property.Item1.SetValue(valueInDb, propertyValue);
+        }
     }
 
     private void CreateTables()

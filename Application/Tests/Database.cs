@@ -18,7 +18,29 @@ public class DatabaseCreate
         _database = new DatabaseLogic("Tests", "createDatabase");
     }
 
-    [Test, Order(1)]
+    [SetUp]
+    public void DatabaseCreateSetUp()
+    {
+        var roleResponse = _database.Read("Name", RoleName, "Role");
+        if (roleResponse.Status is ResponseStatus.Error || !roleResponse.HasValue)
+            _database.Create(new Role
+            {
+                Id = Guid.NewGuid(),
+                Name = RoleName
+            });
+
+        var userResponse = _database.Read("Id", _userGuid, "User");
+        if (userResponse.Status is ResponseStatus.Error || !userResponse.HasValue)
+            _database.Create(new User
+            {
+                Id = _userGuid,
+                Email = "test@one.com",
+                Password = "test",
+                RoleName = RoleName
+            });
+    }
+
+    [Test]
     public void CreateFund()
     {
         var fund = new Fund
@@ -34,12 +56,13 @@ public class DatabaseCreate
         Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
 
-    [Test, Order(2)]
+    [Test]
     public void CreateRole()
     {
         var role = new Role
         {
-            Name = RoleName
+            Id = Guid.NewGuid(),
+            Name = "Test Role 2"
         };
 
         var actual = _database.Create(role);
@@ -47,40 +70,14 @@ public class DatabaseCreate
         Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
 
-    [Test, Order(3)]
+    [Test]
     public void CreateUser()
-    {
-        var user = new User
-        {
-            Id = _userGuid,
-            Email = "test@one.com",
-            Password = "test",
-            RoleName = RoleName
-        };
-
-        var actual = _database.Create(user);
-
-        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
-    }
-
-    [Test, Order(4)]
-    public void CreateAnotherUser()
     {
         var user = new User
         {
             Id = Guid.NewGuid(),
             Email = "test@two.com",
             Password = "test",
-            AuthenticationData = new AuthenticationData
-            {
-                Email = "test@two.com",
-                Token = "TestToken",
-                Source = "127.0.0.1",
-                Timestamp = DateTime.UtcNow,
-                Expires = DateTimeOffset.UtcNow.AddDays(3)
-            },
-            FirstName = "Test",
-            LastName = "Two",
             RoleName = RoleName
         };
 
@@ -89,7 +86,33 @@ public class DatabaseCreate
         Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
 
-    [Test, Order(5)]
+    [Test]
+    public void CreateAnotherUser()
+    {
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = "test@three.com",
+            Password = "test",
+            AuthenticationData = new AuthenticationData
+            {
+                Email = "test@three.com",
+                Token = "TestToken",
+                Source = "127.0.0.1",
+                Timestamp = DateTime.UtcNow,
+                Expires = DateTimeOffset.UtcNow.AddDays(3)
+            },
+            FirstName = "Test",
+            LastName = "Three",
+            RoleName = RoleName
+        };
+
+        var actual = _database.Create(user);
+
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
+    }
+
+    [Test]
     public void CreateResult()
     {
         var result = new Result
@@ -169,6 +192,11 @@ public class DatabaseRead
 {
     private readonly DatabaseLogic _database;
     private readonly Guid _fundGuid = Guid.NewGuid();
+    private readonly Guid _roleGuid = Guid.NewGuid();
+    private readonly Guid _userGuid = Guid.NewGuid();
+    private readonly DateTime _timestamp = DateTime.UtcNow;
+    private readonly DateTimeOffset _expires = DateTimeOffset.UtcNow.AddDays(3);
+    private const string RoleName = "Test Role";
 
     public DatabaseRead()
     {
@@ -181,16 +209,65 @@ public class DatabaseRead
             GrowthRate = 0.0M,
             Charge = 0.0M
         });
+        _database.Create(new Role
+        {
+            Id = _roleGuid,
+            Name = RoleName
+        });
+        _database.Create(new User
+        {
+            Id = _userGuid,
+            Email = "test@one.com",
+            Password = "test",
+            AuthenticationData = new AuthenticationData
+            {
+                Email = "test@one.com",
+                Token = "TestToken",
+                Source = "127.0.0.1",
+                Timestamp = _timestamp,
+                Expires = _expires
+            },
+            FirstName = "Test",
+            LastName = "One",
+            RoleName = RoleName
+        });
     }
 
-    // [Test]
-    // public void ReadFund()
-    // {
-    //     const string propertyName = "Id";
-    //     const string modelTypeName = "Fund";
-    //
-    //     var actual = _database.Read(propertyName, _fundGuid, modelTypeName);
-    //     
-    //     Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
-    // }
+    [Test]
+    public void ReadFund()
+    {
+        var actual = _database.Read("Id", _fundGuid, "Fund");
+
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkValueResponse(new Fund
+        {
+            Id = _fundGuid,
+            Name = "Test Fund",
+            GrowthRate = 0.0M,
+            Charge = 0.0M
+        })));
+    }
+
+    [Test]
+    public void ReadUser()
+    {
+        var actual = _database.Read("Id", _userGuid, "User");
+
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkValueResponse(new User
+        {
+            Id = _userGuid,
+            Email = "test@one.com",
+            Password = "test",
+            AuthenticationData = new AuthenticationData
+            {
+                Email = "test@one.com",
+                Token = "TestToken",
+                Source = "127.0.0.1",
+                Timestamp = _timestamp,
+                Expires = _expires
+            },
+            FirstName = "Test",
+            LastName = "One",
+            RoleName = RoleName
+        })));
+    }
 }
