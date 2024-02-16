@@ -1,6 +1,9 @@
 ﻿namespace Application.Models;
 
-public class Role
+public class Role : IModel
 {
-    public required string Name { get; init; }
+    public Guid Id { get; init; }
+    public string Name { get; init; } = "";
+
+    public Metadata Metadata { get; } = new();
 }

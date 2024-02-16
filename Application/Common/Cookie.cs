@@ -2,6 +2,12 @@
 
 using Newtonsoft.Json;
 
+public struct Cookies
+{
+    public const string AuthenticationData = "QAWA-AuthenticationData";
+    public const string HasLoggedIn = "QAWA-HasLoggedIn";
+}
+
 // TODO - Implement a means of detecting external manipulation of the encrypted cookie (invalidate it if it has been modified)
 public static class Cookie
 {
@@ -32,10 +38,10 @@ public static class Cookie
         if (cookie is null) return Response<TValue, Error>.NotFoundResponse();
 
         var decrypted = StringCipher.Decrypt(cookie, PassPhrase);
-        var authenticationData = JsonConvert.DeserializeObject<TValue>(decrypted);
-        return authenticationData is null
+        var data = JsonConvert.DeserializeObject<TValue>(decrypted);
+        return data is null
             ? Response<TValue, Error>.NotFoundResponse()
-            : Response<TValue, Error>.OkValueResponse(authenticationData);
+            : Response<TValue, Error>.OkValueResponse(data);
     }
 
     public static void Remove(HttpResponse response, string key)

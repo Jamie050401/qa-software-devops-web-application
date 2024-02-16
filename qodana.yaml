@@ -9,10 +9,25 @@ profile:
 
 include:
   - name: CheckDependencyLicenses
+  - name: AutoPropertyCanBeMadeGetOnly.Global
+  - name: MemberCanBePrivate.Global
+  - name: PropertyCanBeMadeInitOnly.Global
+  - name: CssOverwrittenProperties
+  - name: CssUnusedSymbol
+  - name: CssInvalidPropertyValue
+  - name: InvertIf
+  - name: UseCollectionExpression
+  - name: CssNonIntegerLengthInPixels
+  - name: RedundantStringInterpolation
+  - name: UnusedMember.Global
+  - name: UnusedParameter.Global
+  - name: RegExpUnexpectedAnchor
+  - name: RegExpRedundantEscape
+  - name: ArrangeRedundantParentheses
 
 exclude:
   - name: All
     paths:
-      - Application/wwwroot/lib/jquery/dist/jquery.js
+      - Application/wwwroot/lib/
 
 linter: jetbrains/qodana-dotnet:latest

@@ -5,16 +5,17 @@ using Common;
 using Data;
 using ILogger = Serilog.ILogger;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Models;
 using System.Diagnostics;
 
 public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
 {
     public void OnGet()
     {
-        if (Session.GetBoolean(HttpContext.Session, "IsLogout"))
+        if (Session.GetBoolean(HttpContext.Session, Session.Variables.IsLogout))
         {
             notyf.Success("Logged out successfully.");
-            Session.SetBoolean(HttpContext.Session, "IsLogout", false);
+            Session.SetBoolean(HttpContext.Session, Session.Variables.IsLogout, false);
         }
 
         if (Session.Redirect(HttpContext.Session, Request, Response)) return;
@@ -30,7 +31,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         var isEmailValid = Validate.Email(notyf, email);
         if (!isEmailValid) return;
 
-        var dbResponse = DatabaseManager.Database.GetUserFromDatabase(userEmail: email);
+        var dbResponse = DatabaseManager.Database.Read("Email", email, "User");
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
             notyf.Error("Email or password was incorrect, please try again.");
@@ -39,7 +40,8 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         }
 
         Debug.Assert(dbResponse.Value != null, "dbResponse.Value != null");
-        var userInDb = dbResponse.Value;
+        var userInDb = (User)dbResponse.Value;
+        Debug.Assert(userInDb.Password != null, "userInDb.Password != null");
         if (email != userInDb.Email || !SecretHasher.Verify(password, userInDb.Password))
         {
             notyf.Error("Email or password was incorrect, please try again.");
@@ -52,9 +54,9 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
 
     public void OnPostSwitch()
     {
-        if (Session.GetBoolean(HttpContext.Session, "HasLoggedIn"))
+        if (Session.GetBoolean(HttpContext.Session, Session.Variables.HasLoggedIn))
         {
-            Session.SetBoolean(HttpContext.Session, "HasLoggedIn", false);
+            Session.SetBoolean(HttpContext.Session, Session.Variables.HasLoggedIn, false);
         }
 
         Response.Redirect("/register");

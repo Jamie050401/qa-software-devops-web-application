@@ -39,17 +39,8 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
             RoleName = "Default"
         };
 
-        var hasUser = DatabaseManager.Database.UserExistsInDatabase(user.Id);
-        if (hasUser)
-        {
-            notyf.Error("Failed to register user.");
-            logger.Information("Registration failure: user already exists in database");
-            return;
-        }
-
-        DatabaseManager.Database.AddUserToDatabase(user);
-        var dbResponse = DatabaseManager.Database.GetUserFromDatabase(user.Id);
-        if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
+        var dbResponse = DatabaseManager.Database.Create(user);
+        if (dbResponse.Status is ResponseStatus.Error)
         {
             notyf.Error("Failed to register user.");
             logger.Information("Registration failure: unable to add user to database");
