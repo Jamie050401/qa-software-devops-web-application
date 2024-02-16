@@ -180,7 +180,7 @@ public class Database
             var propertyValue = GetPropertyValue(value, propertyInfo);
             return columns == ""
                 ? $"{propertyInfo.Name} = {propertyValue}"
-                : $"{columns},{Environment.NewLine}{propertyInfo.Name} = {propertyValue}";
+                : $"{columns}, {propertyInfo.Name} = {propertyValue}";
         });
     }
 
