@@ -177,30 +177,20 @@ public class Database
         properties = properties as PropertyInfo[] ?? properties.ToArray();
         var columnHeaders = GetColumnHeaders(properties);
         var columnValues = GetColumnValues(value, properties);
-        return $"""
-            INSERT INTO {tableName} ({columnHeaders})
-            VALUES ({columnValues});
-        """;
+        return $"INSERT INTO {tableName} ({columnHeaders}) VALUES ({columnValues});";
     }
 
     private static string GetReadSql(IModel value, string tableName, PropertyInfo id)
     {
         var conditionValue = GetConditionValue(value, id);
-        return $"""
-            SELECT * FROM {tableName}
-            WHERE {id.Name} = {conditionValue};
-        """;
+        return $"SELECT * FROM {tableName} WHERE {id.Name} = {conditionValue};";
     }
 
     private static string GetUpdateSql(IModel value, IEnumerable<PropertyInfo> properties, string tableName, PropertyInfo id)
     {
         var conditionValue = GetConditionValue(value, id);
         var columns = GetColumns(value, properties);
-        return $"""
-            UPDATE {tableName}
-            SET {columns}
-            WHERE {id.Name} = {conditionValue};
-        """;
+        return $"UPDATE {tableName} SET {columns} WHERE {id.Name} = {conditionValue};";
     }
 
     private static object? GetConditionValue(IModel value, PropertyInfo property)
