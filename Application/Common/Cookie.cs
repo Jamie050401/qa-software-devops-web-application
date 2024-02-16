@@ -2,6 +2,12 @@
 
 using Newtonsoft.Json;
 
+public struct Cookies
+{
+    public const string AuthenticationData = "QAWA-AuthenticationData";
+    public const string HasLoggedIn = "QAWA-HasLoggedIn";
+}
+
 // TODO - Implement a means of detecting external manipulation of the encrypted cookie (invalidate it if it has been modified)
 public static class Cookie
 {

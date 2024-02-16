@@ -7,6 +7,14 @@ using System.Diagnostics;
 
 public static class Session
 {
+    public struct Variables
+    {
+        public const string HasLoggedIn = "HasLoggedIn";
+        public const string IsFirstDashboardVisit = "IsFirstDashboardVisit";
+        public const string IsLoggedIn = "IsLoggedIn";
+        public const string IsLogout = "IsLogout";
+    }
+
     public static bool HasValue(ISession session, string key)
     {
         return session.TryGetValue(key, out _);
@@ -24,17 +32,17 @@ public static class Session
 
     public static bool Authenticate(ISession session, HttpRequest request, HttpResponse response)
     {
-        if (!HasValue(session, "HasLoggedIn"))
+        if (!HasValue(session, Variables.HasLoggedIn))
         {
-            var loginCookieResponse = Cookie.Retrieve<bool>(request, "QAWA-HasLoggedIn");
-            if (loginCookieResponse.Status is ResponseStatus.Success && loginCookieResponse.HasValue)
+            var cookieResponse = Cookie.Retrieve<bool>(request, Cookies.HasLoggedIn);
+            if (cookieResponse.Status is ResponseStatus.Success && cookieResponse.HasValue)
             {
-                SetBoolean(session, "HasLoggedIn", loginCookieResponse.Value);
+                SetBoolean(session, Variables.HasLoggedIn, cookieResponse.Value);
             }
         }
 
-        var isLoggedIn = GetBoolean(session, "IsLoggedIn");
-        var hasLoggedIn = GetBoolean(session, "HasLoggedIn");
+        var isLoggedIn = GetBoolean(session, Variables.IsLoggedIn);
+        var hasLoggedIn = GetBoolean(session, Variables.HasLoggedIn);
 
         if (isLoggedIn)
         {
@@ -53,17 +61,17 @@ public static class Session
 
     public static bool Redirect(ISession session, HttpRequest request, HttpResponse response)
     {
-        if (!HasValue(session, "HasLoggedIn"))
+        if (!HasValue(session, Variables.HasLoggedIn))
         {
-            var loginCookieResponse = Cookie.Retrieve<bool>(request, "QAWA-HasLoggedIn");
-            if (loginCookieResponse.Status is ResponseStatus.Success && loginCookieResponse.HasValue)
+            var cookieResponse = Cookie.Retrieve<bool>(request, Cookies.HasLoggedIn);
+            if (cookieResponse.Status is ResponseStatus.Success && cookieResponse.HasValue)
             {
-                SetBoolean(session, "HasLoggedIn", loginCookieResponse.Value);
+                SetBoolean(session, Variables.HasLoggedIn, cookieResponse.Value);
             }
         }
 
-        var isLoggedIn = GetBoolean(session, "IsLoggedIn");
-        var hasLoggedIn = GetBoolean(session, "HasLoggedIn");
+        var isLoggedIn = GetBoolean(session, Variables.IsLoggedIn);
+        var hasLoggedIn = GetBoolean(session, Variables.HasLoggedIn);
 
         if (isLoggedIn)
         {
@@ -85,14 +93,14 @@ public static class Session
     // TODO - Implement support for users to have multiple valid tokens (i.e. for different locations or devices)
     public static void Login(ILogger logger, ISession session, HttpRequest request, HttpResponse response)
     {
-        var authCookieResponse = Cookie.Retrieve<AuthenticationData>(request, "QAWA-AuthenticationData");
-        if (authCookieResponse.Status is ResponseStatus.Error || !authCookieResponse.HasValue)
+        var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, Cookies.AuthenticationData);
+        if (cookieResponse.Status is ResponseStatus.Error || !cookieResponse.HasValue)
         {
             logger.Information($"Login failure: unable to retrieve authentication data from cookies");
             return;
         }
-        Debug.Assert(authCookieResponse.Value != null, "cookieResponse.Value != null");
-        var authenticationData = authCookieResponse.Value;
+        Debug.Assert(cookieResponse.Value != null, "cookieResponse.Value != null");
+        var authenticationData = cookieResponse.Value;
         var dbResponse = DatabaseManager.Database.Read(new User
         {
             Email = authenticationData.Email
@@ -100,7 +108,7 @@ public static class Session
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
             logger.Information($"Login failure: unable to find user matching authentication data stored in cookies");
-            Cookie.Remove(response, "QAWA-AuthenticationData");
+            Cookie.Remove(response, Cookies.AuthenticationData);
             return;
         }
         Debug.Assert(dbResponse.Value != null, "databaseResponse.Value != null");
@@ -114,13 +122,13 @@ public static class Session
 
         if (!isAuthenticated)
         {
-            Cookie.Remove(response, "QAWA-AuthenticationData");
+            Cookie.Remove(response, Cookies.AuthenticationData);
             return;
         }
 
-        SetBoolean(session, "IsLoggedIn", true);
-        SetBoolean(session, "HasLoggedIn", true);
-        SetBoolean(session, "IsFirstDashboardVisit", true);
+        SetBoolean(session, Variables.IsLoggedIn, true);
+        SetBoolean(session, Variables.HasLoggedIn, true);
+        SetBoolean(session, Variables.IsFirstDashboardVisit, true);
         response.Redirect("/dashboard", true);
     }
 
@@ -128,7 +136,7 @@ public static class Session
     {
         if (hasRememberMe)
         {
-            var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, "QAWA-AuthenticationData");
+            var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, Cookies.AuthenticationData);
             if (cookieResponse.Status is ResponseStatus.Error)
             {
                 if (!cookieResponse.HasValue)
@@ -144,7 +152,7 @@ public static class Session
                         Timestamp = DateTime.UtcNow,
                         Expires = DateTimeOffset.UtcNow.AddDays(3)
                     };
-                    Cookie.Store(response, "QAWA-AuthenticationData", authenticationData, authenticationData.Expires, true);
+                    Cookie.Store(response, Cookies.AuthenticationData, authenticationData, authenticationData.Expires, true);
 
                     authenticationData.Token = SecretHasher.Hash(authenticationData.Token);
                     userInDb.AuthenticationData = authenticationData;
@@ -153,19 +161,19 @@ public static class Session
             }
         }
 
-        SetBoolean(session, "IsLoggedIn", true);
-        SetBoolean(session, "HasLoggedIn", true);
-        Cookie.Store(response, "QAWA-HasLoggedIn", true, DateTimeOffset.UtcNow.AddDays(90), true);
-        SetBoolean(session, "IsFirstDashboardVisit", true);
+        SetBoolean(session, Variables.IsLoggedIn, true);
+        SetBoolean(session, Variables.HasLoggedIn, true);
+        Cookie.Store(response, Cookies.HasLoggedIn, true, DateTimeOffset.UtcNow.AddDays(90), true);
+        SetBoolean(session, Variables.IsFirstDashboardVisit, true);
         response.Redirect("/dashboard", true);
     }
 
     public static void Logout(ISession session, HttpRequest request, HttpResponse response)
     {
-        Cookie.Remove(response, "QAWA-AuthenticationData");
+        Cookie.Remove(response, Cookies.AuthenticationData);
 
-        SetBoolean(session, "IsLogout", true);
-        SetBoolean(session, "IsLoggedIn", false);
+        SetBoolean(session, Variables.IsLogout, true);
+        SetBoolean(session, Variables.IsLoggedIn, false);
         response.Redirect("/login", true);
     }
 }

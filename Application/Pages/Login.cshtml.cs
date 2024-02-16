@@ -12,10 +12,10 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
 {
     public void OnGet()
     {
-        if (Session.GetBoolean(HttpContext.Session, "IsLogout"))
+        if (Session.GetBoolean(HttpContext.Session, Session.Variables.IsLogout))
         {
             notyf.Success("Logged out successfully.");
-            Session.SetBoolean(HttpContext.Session, "IsLogout", false);
+            Session.SetBoolean(HttpContext.Session, Session.Variables.IsLogout, false);
         }
 
         if (Session.Redirect(HttpContext.Session, Request, Response)) return;
@@ -57,9 +57,9 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
 
     public void OnPostSwitch()
     {
-        if (Session.GetBoolean(HttpContext.Session, "HasLoggedIn"))
+        if (Session.GetBoolean(HttpContext.Session, Session.Variables.HasLoggedIn))
         {
-            Session.SetBoolean(HttpContext.Session, "HasLoggedIn", false);
+            Session.SetBoolean(HttpContext.Session, Session.Variables.HasLoggedIn, false);
         }
 
         Response.Redirect("/register");
