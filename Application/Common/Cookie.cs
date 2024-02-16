@@ -38,10 +38,10 @@ public static class Cookie
         if (cookie is null) return Response<TValue, Error>.NotFoundResponse();
 
         var decrypted = StringCipher.Decrypt(cookie, PassPhrase);
-        var authenticationData = JsonConvert.DeserializeObject<TValue>(decrypted);
-        return authenticationData is null
+        var data = JsonConvert.DeserializeObject<TValue>(decrypted);
+        return data is null
             ? Response<TValue, Error>.NotFoundResponse()
-            : Response<TValue, Error>.OkValueResponse(authenticationData);
+            : Response<TValue, Error>.OkValueResponse(data);
     }
 
     public static void Remove(HttpResponse response, string key)

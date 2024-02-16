@@ -142,11 +142,17 @@ public class Database
 
     private static string GetUpdateSql(IModel value, IEnumerable<PropertyInfo> properties, string tableName, PropertyInfo id)
     {
+        var conditionValue = id.GetValue(value);
+        conditionValue = conditionValue switch
+        {
+            string or Guid => $"\"{conditionValue}\"",
+            _ => conditionValue
+        };
         var columns = GetColumns(value, properties);
         return $"""
             UPDATE {tableName}
             SET {columns}
-            WHERE {id.Name} = "{id.GetValue(value)}";
+            WHERE {id.Name} = {conditionValue};
         """;
     }
 
