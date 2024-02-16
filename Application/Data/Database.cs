@@ -26,30 +26,50 @@ public class Database
 
     public Response<IModel, Error> Create(IModel value)
     {
-        return this.Interact(OperationType.Create, value);
+        return this.Interact(value, OperationType.Create);
     }
 
-    public Response<IModel, Error> Read(IModel value)
+    public Response<IModel, Error> Read(string propertyName, object propertyValue, string modelTypeName)
     {
-        return this.Interact(OperationType.Read, value);
+        var value = (IModel?)Activator.CreateInstance("Application", $"Application.Models.{modelTypeName}")?.Unwrap();
+
+        if (value is null) return Response<IModel, Error>.BadRequestResponse($"Unable to instantiate {modelTypeName}");
+
+        var propertyInfo = value.GetType().GetProperty(propertyName);
+
+        if (propertyInfo is null || !propertyInfo.CanWrite) return Response<IModel, Error>.BadRequestResponse($"Unable to find property {propertyName}");
+
+        propertyInfo.SetValue(value, propertyValue);
+
+        return this.Interact(value, OperationType.Read);
     }
 
     public Response<IModel, Error> Update(IModel value)
     {
-        return this.Interact(OperationType.Update, value);
+        return this.Interact(value, OperationType.Update);
     }
 
-    public Response<IModel, Error> Delete(IModel value)
+    public Response<IModel, Error> Delete(string propertyName, object propertyValue, string modelTypeName)
     {
-        return this.Interact(OperationType.Delete, value);
+        var value = (IModel?)Activator.CreateInstance("Application", $"Application.Models.{modelTypeName}")?.Unwrap();
+
+        if (value is null) return Response<IModel, Error>.BadRequestResponse($"Unable to instantiate {modelTypeName}");
+
+        var propertyInfo = value.GetType().GetProperty(propertyName);
+
+        if (propertyInfo is null || !propertyInfo.CanWrite) return Response<IModel, Error>.BadRequestResponse($"Unable to find property {propertyName}");
+
+        propertyInfo.SetValue(value, propertyValue);
+
+        return this.Interact(value, OperationType.Delete);
     }
 
-    private Response<IModel, Error> Interact(OperationType operationType, IModel value)
+    private Response<IModel, Error> Interact(IModel value, OperationType operationType)
     {
         var valueType = value.GetType();
         var properties = valueType.GetProperties().Where(propertyInfo =>
             propertyInfo.Name != "Metadata").ToArray();
-        var id = GetId(operationType, properties);
+        var id = GetId(operationType, value, properties);
 
         if (id is null) return Response<IModel, Error>.BadRequestResponse("Unable to determine Id from supplied model");
 
@@ -69,17 +89,37 @@ public class Database
         return Response<IModel, Error>.OkResponse();
     }
 
-    private static PropertyInfo? GetId(OperationType operationType, IEnumerable<PropertyInfo> properties)
+    private static PropertyInfo? GetId(OperationType operationType, IModel value, IEnumerable<PropertyInfo> properties)
     {
         properties = properties as PropertyInfo[] ?? properties.ToArray();
         var id = properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Id");
-        if (operationType is OperationType.Read or OperationType.Delete)
+
+        if (id is not null)
         {
-            id ??= properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Name")
-                   ?? properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Email");
+            var propertyDefault = Activator.CreateInstance(id.PropertyType);
+            var propertyValue = id.GetValue(value);
+            if (propertyValue == propertyDefault) id = null;
         }
 
-        return id;
+        if (operationType is not (OperationType.Read or OperationType.Delete)) return id;
+
+        PropertyInfo? subId = null;
+        subId = value.GetType().Name switch
+        {
+            "Application.Models.Role" => properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Name"),
+            "Application.Models.User" => properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Email"),
+            _ => subId
+        };
+
+        // ReSharper disable once InvertIf
+        if (subId is not null)
+        {
+            var propertyDefault = Activator.CreateInstance(subId.PropertyType);
+            var propertyValue = subId.GetValue(value);
+            if (propertyValue == propertyDefault) subId = null;
+        }
+
+        return subId ?? id;
     }
 
     private static string GetCreateSql(IModel value, IEnumerable<PropertyInfo> properties, string tableName)

@@ -31,10 +31,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         var isEmailValid = Validate.Email(notyf, email);
         if (!isEmailValid) return;
 
-        var dbResponse = DatabaseManager.Database.Read(new User
-        {
-            Email = email
-        });
+        var dbResponse = DatabaseManager.Database.Read("Email", email, "User");
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
             notyf.Error("Email or password was incorrect, please try again.");

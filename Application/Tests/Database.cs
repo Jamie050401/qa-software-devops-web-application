@@ -163,3 +163,34 @@ public class DatabaseUpdate
         Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
 }
+
+[TestFixture]
+public class DatabaseRead
+{
+    private readonly DatabaseLogic _database;
+    private readonly Guid _fundGuid = Guid.NewGuid();
+
+    public DatabaseRead()
+    {
+        File.Delete("Tests/readDatabase.sqlite");
+        _database = new DatabaseLogic("Tests", "readDatabase");
+        _database.Create(new Fund
+        {
+            Id = _fundGuid,
+            Name = "Test Fund",
+            GrowthRate = 0.0M,
+            Charge = 0.0M
+        });
+    }
+
+    // [Test]
+    // public void ReadFund()
+    // {
+    //     const string propertyName = "Id";
+    //     const string modelTypeName = "Fund";
+    //
+    //     var actual = _database.Read(propertyName, _fundGuid, modelTypeName);
+    //     
+    //     Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
+    // }
+}
