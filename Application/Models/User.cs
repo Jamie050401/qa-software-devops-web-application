@@ -13,6 +13,6 @@ public class User : IModel
     public AuthenticationData? AuthenticationData { get; set; }
     public string? FirstName { get; init; }
     public string? LastName { get; init; }
-    [ForeignKey(TableName = "Roles", ColumnName = "Name"), NonNullable]
+    [ForeignKey(TableName = "Roles", ColumnName = "Name", DeleteAction = ForeignKeyDeleteAction.None), NonNullable]
     public string RoleName { get; init; } = "";
 }

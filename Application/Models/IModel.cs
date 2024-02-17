@@ -11,6 +11,13 @@ public class ForeignKeyAttribute : Attribute
 {
     public required string TableName;
     public required string ColumnName;
+    public required ForeignKeyDeleteAction DeleteAction;
+}
+
+public enum ForeignKeyDeleteAction
+{
+    None,
+    Cascade
 }
 
 [AttributeUsage(AttributeTargets.Property)]

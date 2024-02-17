@@ -285,42 +285,76 @@ public class Database
 
     private void CreateTables()
     {
-        const string sqlCreateTables = """
-            CREATE TABLE IF NOT EXISTS Funds (
-                Id TEXT PRIMARY KEY NOT NULL,
-                Name TEXT NOT NULL,
-                GrowthRate REAL NOT NULL,
-                Charge REAL NOT NULL
-            );
-           
-            CREATE TABLE IF NOT EXISTS Roles (
-                Id TEXT PRIMARY KEY NOT NULL,
-                Name TEXT NOT NULL
-            );
-            
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_Name on Roles(Name);
-           
-            CREATE TABLE IF NOT EXISTS Users (
-                Id TEXT PRIMARY KEY NOT NULL,
-                Email TEXT NOT NULL,
-                Password TEXT NOT NULL,
-                AuthenticationData TEXT,
-                FirstName TEXT,
-                LastName TEXT,
-                RoleName TEXT NOT NULL REFERENCES Roles(Name) ON DELETE NO ACTION
-            );
+        var models =
+            from type in Assembly.GetExecutingAssembly().GetTypes()
+            where type.GetInterfaces().Contains(typeof(IModel)) && type.GetConstructor(Type.EmptyTypes) != null
+            select Activator.CreateInstance(type) as IModel;
 
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_Email ON Users(Email);
-            
-            CREATE TABLE IF NOT EXISTS Results (
-                Id TEXT PRIMARY KEY NOT NULL,
-                UserId INTEGER NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
-                TotalInvestment REAL NOT NULL,
-                ProjectedValue REAL NOT NULL
-            );
-        """;
+        var tablesSql = "";
+        var indexesSql = "";
+        foreach (var model in models)
+        {
+            var type = model.GetType();
+            var properties = type.GetProperties();
 
-        this.ExecuteNonQuery(sqlCreateTables);
+            var tableName = $"{type.Name}s";
+
+            var columns = "";
+            foreach (var property in properties)
+            {
+                var dbType = property.PropertyType.Name switch
+                {
+                    "decimal" => "REAL",
+                    _ => "TEXT"
+                };
+
+                var primaryKeyAttribute = property.GetCustomAttribute<PrimaryKeyAttribute>();
+                var primaryKey = primaryKeyAttribute is null
+                    ? ""
+                    : " PRIMARY KEY";
+
+                var uniqueAttribute = property.GetCustomAttribute<UniqueAttribute>();
+                var unique = uniqueAttribute is null
+                    ? ""
+                    : " UNIQUE";
+
+                var nonNullableAttribute = property.GetCustomAttribute<NonNullableAttribute>();
+                var nonNullable = nonNullableAttribute is null
+                    ? ""
+                    : " NOT NULL";
+
+                var foreignKeyAttribute = property.GetCustomAttribute<ForeignKeyAttribute>();
+                var foreignKey = foreignKeyAttribute is null
+                    ? ""
+                    : $" REFERENCES {foreignKeyAttribute.TableName}({foreignKeyAttribute.ColumnName}) ON DELETE {GetSqlForDeleteAction(foreignKeyAttribute.DeleteAction)}";
+
+                columns = columns == ""
+                    ? $"{property.Name} {dbType}{primaryKey}{unique}{nonNullable}{foreignKey}"
+                    : $"{columns}, {property.Name} {dbType}{primaryKey}{unique}{nonNullable}{foreignKey}";
+
+                var indexAttribute = property.GetCustomAttribute<IndexAttribute>();
+                if (indexAttribute is not null)
+                {
+                    indexesSql = indexesSql == ""
+                        ? $"CREATE UNIQUE INDEX IF NOT EXISTS idx_{property.Name} on {tableName}({property.Name});"
+                        : $"{indexesSql} CREATE UNIQUE INDEX IF NOT EXISTS idx_{property.Name} on {tableName}({property.Name});";
+                }
+            }
+            tablesSql = tablesSql == ""
+                ? $"CREATE TABLE IF NOT EXISTS {tableName} ({columns});"
+                : $"{tablesSql} CREATE TABLE IF NOT EXISTS {tableName} ({columns});";
+        }
+        this.ExecuteNonQuery(tablesSql);
+        this.ExecuteNonQuery(indexesSql);
+    }
+
+    private static string GetSqlForDeleteAction(ForeignKeyDeleteAction deleteAction)
+    {
+        return deleteAction switch
+        {
+            ForeignKeyDeleteAction.Cascade => "CASCADE",
+            _ => "NO ACTION"
+        };
     }
 
     private int ExecuteNonQuery(string sqlCommand)
