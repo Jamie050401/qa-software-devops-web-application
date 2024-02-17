@@ -1,21 +1,37 @@
 ﻿namespace Application.Models;
 
-public struct ForeignKey
+[AttributeUsage(AttributeTargets.Property)]
+public class PrimaryKeyAttribute : Attribute
 {
-    public string TableName { get; init; }
-    public string ColumnName { get; init; }
+    public readonly bool IsPrimaryKey = true;
 }
 
-public class Metadata
+[AttributeUsage(AttributeTargets.Property)]
+public class ForeignKeyAttribute : Attribute
 {
-    public IList<string> Indexes { get; } = new List<string>();
-    public IDictionary<string, bool> Nullable { get; } = new Dictionary<string, bool>();
-    public IDictionary<string, ForeignKey> ForeignKeys { get; } = new Dictionary<string, ForeignKey>();
+    public required string TableName;
+    public required string ColumnName;
+}
+
+[AttributeUsage(AttributeTargets.Property)]
+public class IndexAttribute : Attribute
+{
+    public readonly bool HasIndex = true;
+}
+
+[AttributeUsage(AttributeTargets.Property)]
+public class UniqueAttribute : Attribute
+{
+    public readonly bool IsUnique = true;
+}
+
+[AttributeUsage(AttributeTargets.Property)]
+public class NonNullableAttribute : Attribute
+{
+    public readonly bool NonNullable = true;
 }
 
 public interface IModel
 {
     public Guid Id { get; }
-
-    public Metadata Metadata { get; }
 }

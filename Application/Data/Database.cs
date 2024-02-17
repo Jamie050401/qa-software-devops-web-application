@@ -67,8 +67,7 @@ public class Database
     private Response<IModel, Error> Interact(IModel value, OperationType operationType)
     {
         var valueType = value.GetType();
-        var properties = valueType.GetProperties().Where(propertyInfo => propertyInfo.Name != "Metadata");
-        properties = properties as PropertyInfo[] ?? properties.ToArray();
+        var properties = valueType.GetProperties();
 
         var id = GetId(operationType, value, properties);
         if (id is null)
