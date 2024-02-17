@@ -10,15 +10,9 @@ using System.Reflection;
 
 public class Database
 {
-    public Database()
+    public Database(string? path = null, string? name = null)
     {
-        Directory.CreateDirectory("Data");
-        ConnectionString = "Data Source=Data/database.sqlite;";
-        this.CreateTables();
-    }
-
-    public Database(string path, string? name = null)
-    {
+        path ??= "Data";
         name ??= "database";
         Directory.CreateDirectory(path);
         ConnectionString = $"Data Source={path}/{name}.sqlite";
@@ -73,12 +67,12 @@ public class Database
     private Response<IModel, Error> Interact(IModel value, OperationType operationType)
     {
         var valueType = value.GetType();
-        var properties = valueType.GetProperties().Where(propertyInfo =>
-            propertyInfo.Name != "Metadata");
+        var properties = valueType.GetProperties().Where(propertyInfo => propertyInfo.Name != "Metadata");
         properties = properties as PropertyInfo[] ?? properties.ToArray();
-        var id = GetId(operationType, value, properties);
 
-        if (id is null) return Response<IModel, Error>.BadRequestResponse("Unable to determine Id from supplied model");
+        var id = GetId(operationType, value, properties);
+        if (id is null)
+            return Response<IModel, Error>.BadRequestResponse("Unable to determine Id from supplied model");
 
         var tableName = $"{valueType.Name}s";
         var sql = operationType switch
@@ -94,28 +88,25 @@ public class Database
         {
             case OperationType.Create:
             case OperationType.Update:
-            case OperationType.Delete:
-                var affected = this.ExecuteNonQuery(sql);
-                if (affected <= 0)
+                var createUpdateAffected = this.ExecuteNonQuery(sql);
+                if (createUpdateAffected <= 0)
                     return Response<IModel, Error>.BadRequestResponse("Database query failed");
 
-                if (operationType is OperationType.Delete)
-                    this.DeleteFromCache($"{id.GetValue(value)}");
-                else
-                    this.AddToCache($"{id.GetValue(value)}", value);
+                // For Create/Update scenarios, id should always be the Guid enforced by the IModel interface
+                this.AddToCache($"{id.GetValue(value)}", value);
                 return Response<IModel, Error>.OkResponse();
             case OperationType.Read:
                 var valueInCache = (IModel?)this.GetFromCache($"{id.GetValue(value)}");
                 if (valueInCache is not null)
                     return Response<IModel, Error>.OkValueResponse(valueInCache);
 
-                var dbResponse = this.ExecuteReader(sql);
-                if (!dbResponse.Reader.Read())
+                var readerResponse = this.ExecuteReader(sql);
+                if (!readerResponse.Reader.Read())
                     return Response<IModel, Error>.NotFoundResponse($"{id.GetValue(value)} does not exist within the database");
 
                 var propertyValues = new object[properties.Count()];
-                dbResponse.Reader.GetValues(propertyValues);
-                dbResponse.Dispose();
+                readerResponse.Reader.GetValues(propertyValues);
+                readerResponse.Dispose();
 
                 var valueInDb = (IModel?)Activator.CreateInstance("Application", $"Application.Models.{valueType.Name}")?.Unwrap();
                 if (valueInDb is null)
@@ -127,6 +118,18 @@ public class Database
                 }
                 this.AddToCache($"{valueInDb.Id}", valueInDb);
                 return Response<IModel, Error>.OkValueResponse(valueInDb);
+            case OperationType.Delete:
+                var dbResponse = this.Interact(value, OperationType.Read);
+                if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
+                    return Response<IModel, Error>.BadRequestResponse($"{id.GetValue(value)} does not exist within the database");
+
+                var deleteAffected = this.ExecuteNonQuery(sql);
+                if (deleteAffected <= 0)
+                    return Response<IModel, Error>.BadRequestResponse("Database query failed");
+
+                Debug.Assert(dbResponse.Value != null, "dbResponse.Value != null");
+                this.DeleteFromCache(dbResponse.Value.Id);
+                return Response<IModel, Error>.OkResponse();
             default:
                 throw new ArgumentOutOfRangeException(nameof(operationType), operationType, null);
         }

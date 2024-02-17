@@ -96,7 +96,7 @@ public static class Session
         var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, Cookies.AuthenticationData);
         if (cookieResponse.Status is ResponseStatus.Error || !cookieResponse.HasValue)
         {
-            logger.Information($"Login failure: unable to retrieve authentication data from cookies");
+            logger.Information("Login failure: unable to retrieve authentication data from cookies");
             return;
         }
         Debug.Assert(cookieResponse.Value != null, "cookieResponse.Value != null");
@@ -104,7 +104,7 @@ public static class Session
         var dbResponse = DatabaseManager.Database.Read("Email", authenticationData.Email, "User");
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
-            logger.Information($"Login failure: unable to find user matching authentication data stored in cookies");
+            logger.Information("Login failure: unable to find user matching authentication data stored in cookies");
             Cookie.Remove(response, Cookies.AuthenticationData);
             return;
         }
@@ -165,7 +165,7 @@ public static class Session
         response.Redirect("/dashboard", true);
     }
 
-    public static void Logout(ISession session, HttpRequest request, HttpResponse response)
+    public static void Logout(ISession session, HttpResponse response)
     {
         Cookie.Remove(response, Cookies.AuthenticationData);
 

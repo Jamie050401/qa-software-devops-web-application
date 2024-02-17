@@ -20,6 +20,6 @@ public class DashboardModel(INotyfService notyf) : PageModel
 
     public void OnPostLogout()
     {
-        Session.Logout(HttpContext.Session, Request, Response);
+        Session.Logout(HttpContext.Session, Response);
     }
 }

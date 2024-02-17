@@ -3,6 +3,6 @@
 public class Error(int errorCode)
 {
     public int ErrorCode { get; } = errorCode;
-    public string ErrorMessage { get; set; } = "";
-    public Exception? Exception { get; set; }
+    public required string ErrorMessage { get; init; }
+    public Exception? Exception { get; init; }
 }

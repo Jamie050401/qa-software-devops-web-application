@@ -9,9 +9,9 @@ public enum ResponseStatus
 public class Response<TValue, TError>(ResponseStatus status)
 {
     public ResponseStatus Status { get; } = status;
-    public TValue? Value { get; set; }
+    public TValue? Value { get; private init; }
     public bool HasValue => Value is not null;
-    public List<TError> Errors { get; set; } = new();
+    public List<TError> Errors { get; } = [];
 
     public void AddError(TError error)
     {
