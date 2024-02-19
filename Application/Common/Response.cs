@@ -50,4 +50,14 @@ public class Response<TValue, TError>(ResponseStatus status)
         });
         return response;
     }
+
+    public static Response<TValue, Error> ServerErrorResponse(string errorMessage = "An internal server error has occured")
+    {
+        var response = new Response<TValue, Error>(ResponseStatus.Error);
+        response.AddError(new Error(500)
+        {
+            ErrorMessage = errorMessage
+        });
+        return response;
+    }
 }

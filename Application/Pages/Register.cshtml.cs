@@ -26,6 +26,7 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
 
         var isEmailValid = Validate.Email(notyf, email);
         if (!isEmailValid) return;
+
         var isPasswordValid = Validate.Password(notyf, password, confirmPassword);
         if (!isPasswordValid) return;
 

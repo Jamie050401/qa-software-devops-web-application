@@ -134,27 +134,24 @@ public static class Session
         if (hasRememberMe)
         {
             var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, Cookies.AuthenticationData);
-            if (cookieResponse.Status is ResponseStatus.Error)
+            if (cookieResponse.Status is ResponseStatus.Error && !cookieResponse.HasValue)
             {
-                if (!cookieResponse.HasValue)
+                // TODO - Set 'Expires' via parameter such that the user can decide how long to be remembered for i.e. from 1 day up to 90 days
+                var authenticationData = new AuthenticationData
                 {
-                    // TODO - Set 'Expires' via parameter such that the user can decide how long to be remembered for i.e. from 1 day up to 90 days
-                    var authenticationData = new AuthenticationData
-                    {
-                        Email = email,
-                        Token = Password.Generate(),
-                        Source = connectionInfo.RemoteIpAddress is null
-                            ? ""
-                            : connectionInfo.RemoteIpAddress.ToString(),
-                        Timestamp = DateTime.UtcNow,
-                        Expires = DateTimeOffset.UtcNow.AddDays(3)
-                    };
-                    Cookie.Store(response, Cookies.AuthenticationData, authenticationData, authenticationData.Expires, true);
+                    Email = email,
+                    Token = Password.Generate(),
+                    Source = connectionInfo.RemoteIpAddress is null
+                        ? ""
+                        : connectionInfo.RemoteIpAddress.ToString(),
+                    Timestamp = DateTime.UtcNow,
+                    Expires = DateTimeOffset.UtcNow.AddDays(3)
+                };
+                Cookie.Store(response, Cookies.AuthenticationData, authenticationData, authenticationData.Expires, true);
 
-                    authenticationData.Token = SecretHasher.Hash(authenticationData.Token);
-                    userInDb.AuthenticationData = authenticationData;
-                    DatabaseManager.Database.Update(userInDb);
-                }
+                authenticationData.Token = SecretHasher.Hash(authenticationData.Token);
+                userInDb.AuthenticationData = authenticationData;
+                DatabaseManager.Database.Update(userInDb);
             }
         }
 
