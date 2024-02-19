@@ -96,7 +96,7 @@ public static class Session
         var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, Cookies.AuthenticationData);
         if (cookieResponse.Status is ResponseStatus.Error || !cookieResponse.HasValue)
         {
-            logger.Information($"Login failure: unable to retrieve authentication data from cookies");
+            logger.Information("Login failure: unable to retrieve authentication data from cookies");
             return;
         }
         Debug.Assert(cookieResponse.Value != null, "cookieResponse.Value != null");
@@ -104,7 +104,7 @@ public static class Session
         var dbResponse = DatabaseManager.Database.Read("Email", authenticationData.Email, "User");
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
-            logger.Information($"Login failure: unable to find user matching authentication data stored in cookies");
+            logger.Information("Login failure: unable to find user matching authentication data stored in cookies");
             Cookie.Remove(response, Cookies.AuthenticationData);
             return;
         }
@@ -134,27 +134,24 @@ public static class Session
         if (hasRememberMe)
         {
             var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, Cookies.AuthenticationData);
-            if (cookieResponse.Status is ResponseStatus.Error)
+            if (cookieResponse.Status is ResponseStatus.Error && !cookieResponse.HasValue)
             {
-                if (!cookieResponse.HasValue)
+                // TODO - Set 'Expires' via parameter such that the user can decide how long to be remembered for i.e. from 1 day up to 90 days
+                var authenticationData = new AuthenticationData
                 {
-                    // TODO - Set 'Expires' via parameter such that the user can decide how long to be remembered for i.e. from 1 day up to 90 days
-                    var authenticationData = new AuthenticationData
-                    {
-                        Email = email,
-                        Token = Password.Generate(),
-                        Source = connectionInfo.RemoteIpAddress is null
-                            ? ""
-                            : connectionInfo.RemoteIpAddress.ToString(),
-                        Timestamp = DateTime.UtcNow,
-                        Expires = DateTimeOffset.UtcNow.AddDays(3)
-                    };
-                    Cookie.Store(response, Cookies.AuthenticationData, authenticationData, authenticationData.Expires, true);
+                    Email = email,
+                    Token = Password.Generate(),
+                    Source = connectionInfo.RemoteIpAddress is null
+                        ? ""
+                        : connectionInfo.RemoteIpAddress.ToString(),
+                    Timestamp = DateTime.UtcNow,
+                    Expires = DateTimeOffset.UtcNow.AddDays(3)
+                };
+                Cookie.Store(response, Cookies.AuthenticationData, authenticationData, authenticationData.Expires, true);
 
-                    authenticationData.Token = SecretHasher.Hash(authenticationData.Token);
-                    userInDb.AuthenticationData = authenticationData;
-                    DatabaseManager.Database.Update(userInDb);
-                }
+                authenticationData.Token = SecretHasher.Hash(authenticationData.Token);
+                userInDb.AuthenticationData = authenticationData;
+                DatabaseManager.Database.Update(userInDb);
             }
         }
 
@@ -165,7 +162,7 @@ public static class Session
         response.Redirect("/dashboard", true);
     }
 
-    public static void Logout(ISession session, HttpRequest request, HttpResponse response)
+    public static void Logout(ISession session, HttpResponse response)
     {
         Cookie.Remove(response, Cookies.AuthenticationData);
 

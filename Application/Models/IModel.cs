@@ -1,21 +1,32 @@
 ﻿namespace Application.Models;
 
-public struct ForeignKey
+[AttributeUsage(AttributeTargets.Property)]
+public class PrimaryKeyAttribute : Attribute;
+
+[AttributeUsage(AttributeTargets.Property)]
+public class ForeignKeyAttribute : Attribute
 {
-    public string TableName { get; init; }
-    public string ColumnName { get; init; }
+    public required string TableName;
+    public required string ColumnName;
+    public required ForeignKeyDeleteAction DeleteAction;
 }
 
-public class Metadata
+public enum ForeignKeyDeleteAction
 {
-    public IList<string> Indexes { get; } = new List<string>();
-    public IDictionary<string, bool> Nullable { get; } = new Dictionary<string, bool>();
-    public IDictionary<string, ForeignKey> ForeignKeys { get; } = new Dictionary<string, ForeignKey>();
+    None,
+    Cascade
 }
+
+[AttributeUsage(AttributeTargets.Property)]
+public class IndexAttribute : Attribute;
+
+[AttributeUsage(AttributeTargets.Property)]
+public class UniqueAttribute : Attribute;
+
+[AttributeUsage(AttributeTargets.Property)]
+public class NonNullableAttribute : Attribute;
 
 public interface IModel
 {
     public Guid Id { get; }
-
-    public Metadata Metadata { get; }
 }

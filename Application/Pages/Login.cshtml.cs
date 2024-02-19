@@ -45,7 +45,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         if (email != userInDb.Email || !SecretHasher.Verify(password, userInDb.Password))
         {
             notyf.Error("Email or password was incorrect, please try again.");
-            logger.Information($"Login failure: supplied password does not match stored password hash.");
+            logger.Information("Login failure: supplied password does not match stored password hash.");
             return;
         }
 

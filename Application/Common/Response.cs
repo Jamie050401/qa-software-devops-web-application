@@ -9,9 +9,9 @@ public enum ResponseStatus
 public class Response<TValue, TError>(ResponseStatus status)
 {
     public ResponseStatus Status { get; } = status;
-    public TValue? Value { get; set; }
+    public TValue? Value { get; private init; }
     public bool HasValue => Value is not null;
-    public List<TError> Errors { get; set; } = new();
+    public List<TError> Errors { get; } = [];
 
     public void AddError(TError error)
     {
@@ -45,6 +45,16 @@ public class Response<TValue, TError>(ResponseStatus status)
     {
         var response = new Response<TValue, Error>(ResponseStatus.Error);
         response.AddError(new Error(404)
+        {
+            ErrorMessage = errorMessage
+        });
+        return response;
+    }
+
+    public static Response<TValue, Error> ServerErrorResponse(string errorMessage = "An internal server error has occured")
+    {
+        var response = new Response<TValue, Error>(ResponseStatus.Error);
+        response.AddError(new Error(500)
         {
             ErrorMessage = errorMessage
         });

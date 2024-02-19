@@ -10,15 +10,9 @@ using System.Reflection;
 
 public class Database
 {
-    public Database()
+    public Database(string? path = null, string? name = null)
     {
-        Directory.CreateDirectory("Data");
-        ConnectionString = "Data Source=Data/database.sqlite;";
-        this.CreateTables();
-    }
-
-    public Database(string path, string? name = null)
-    {
+        path ??= "Data";
         name ??= "database";
         Directory.CreateDirectory(path);
         ConnectionString = $"Data Source={path}/{name}.sqlite";
@@ -27,154 +21,164 @@ public class Database
 
     public Response<IModel, Error> Create(IModel value)
     {
-        return this.Interact(value, OperationType.Create);
+        return this.CreateUpdate(OperationType.Create, value);
     }
 
     public Response<IModel, Error> Read(string propertyName, object propertyValue, string modelTypeName)
     {
-        var valueResponse = GetValue(propertyName, propertyValue, modelTypeName);
+        var inputs = new Inputs
+        {
+            PropertyName = propertyName,
+            PropertyValue = propertyValue,
+            ModelTypeName = modelTypeName
+        };
 
-        if (valueResponse.Status is ResponseStatus.Error || !valueResponse.HasValue) return valueResponse;
-
-        Debug.Assert(valueResponse.Value != null, "valueResponse.Value != null");
-        return this.Interact(valueResponse.Value, OperationType.Read);
+        return this.ReadDelete(OperationType.Read, inputs);
     }
 
     public Response<IModel, Error> Update(IModel value)
     {
-        return this.Interact(value, OperationType.Update);
+        return this.CreateUpdate(OperationType.Update, value);
     }
 
     public Response<IModel, Error> Delete(string propertyName, object propertyValue, string modelTypeName)
     {
-        var valueResponse = GetValue(propertyName, propertyValue, modelTypeName);
+        var inputs = new Inputs
+        {
+            PropertyName = propertyName,
+            PropertyValue = propertyValue,
+            ModelTypeName = modelTypeName
+        };
 
-        if (valueResponse.Status is ResponseStatus.Error || !valueResponse.HasValue) return valueResponse;
-
-        Debug.Assert(valueResponse.Value != null, "valueResponse.Value != null");
-        return this.Interact(valueResponse.Value, OperationType.Delete);
+        return this.ReadDelete(OperationType.Delete, inputs);
     }
 
-    private static Response<IModel, Error> GetValue(string propertyName, object propertyValue, string modelTypeName)
+    private Response<IModel, Error> CreateUpdate(OperationType operationType, IModel value)
     {
-        var value = (IModel?)Activator.CreateInstance("Application", $"Application.Models.{modelTypeName}")?.Unwrap();
+        if (operationType is OperationType.Read or OperationType.Delete)
+            return Response<IModel, Error>.BadRequestResponse($"{operationType} is not supported");
 
-        if (value is null) return Response<IModel, Error>.BadRequestResponse($"Unable to instantiate Application.Models.{modelTypeName}");
+        var valueType = GetValueType(value, null);
+        if (valueType is null)
+            return Response<IModel, Error>.ServerErrorResponse("Failed to determine value type");
 
-        var propertyInfo = value.GetType().GetProperty(propertyName);
-
-        if (propertyInfo is null || !propertyInfo.CanWrite) return Response<IModel, Error>.BadRequestResponse($"Unable to find property {propertyName}");
-
-        propertyInfo.SetValue(value, propertyValue);
-
-        return Response<IModel, Error>.OkValueResponse(value);
-    }
-
-    private Response<IModel, Error> Interact(IModel value, OperationType operationType)
-    {
-        var valueType = value.GetType();
-        var properties = valueType.GetProperties().Where(propertyInfo =>
-            propertyInfo.Name != "Metadata");
-        properties = properties as PropertyInfo[] ?? properties.ToArray();
-        var id = GetId(operationType, value, properties);
-
-        if (id is null) return Response<IModel, Error>.BadRequestResponse("Unable to determine Id from supplied model");
+        var properties = valueType.GetProperties();
 
         var tableName = $"{valueType.Name}s";
-        var sql = operationType switch
+        var sql = operationType is OperationType.Create
+            ? GetCreateSql(value, properties, tableName)
+            : GetUpdateSql(value, properties, tableName);
+
+        int createUpdateAffected;
+        try
         {
-            OperationType.Create => GetCreateSql(value, properties, tableName),
-            OperationType.Read => GetReadSql(value, tableName, id),
-            OperationType.Update => GetUpdateSql(value, properties, tableName, id),
-            OperationType.Delete => GetDeleteSql(value, tableName, id),
-            _ => throw new ArgumentOutOfRangeException(nameof(operationType), operationType, null)
-        };
-
-        switch (operationType)
-        {
-            case OperationType.Create:
-            case OperationType.Update:
-            case OperationType.Delete:
-                var affected = this.ExecuteNonQuery(sql);
-                if (affected <= 0)
-                    return Response<IModel, Error>.BadRequestResponse("Database query failed");
-
-                if (operationType is OperationType.Delete)
-                    this.DeleteFromCache($"{id.GetValue(value)}");
-                else
-                    this.AddToCache($"{id.GetValue(value)}", value);
-                return Response<IModel, Error>.OkResponse();
-            case OperationType.Read:
-                var valueInCache = (IModel?)this.GetFromCache($"{id.GetValue(value)}");
-                if (valueInCache is not null)
-                    return Response<IModel, Error>.OkValueResponse(valueInCache);
-
-                var dbResponse = this.ExecuteReader(sql);
-                if (!dbResponse.Reader.Read())
-                    return Response<IModel, Error>.NotFoundResponse($"{id.GetValue(value)} does not exist within the database");
-
-                var propertyValues = new object[properties.Count()];
-                dbResponse.Reader.GetValues(propertyValues);
-                dbResponse.Dispose();
-
-                var valueInDb = (IModel?)Activator.CreateInstance("Application", $"Application.Models.{valueType.Name}")?.Unwrap();
-                if (valueInDb is null)
-                    return Response<IModel, Error>.BadRequestResponse($"Unable to instantiate Application.Models.{valueType.Name}");
-
-                foreach (var property in properties.Zip(propertyValues, Tuple.Create))
-                {
-                    GetDatabaseValue(valueInDb, property);
-                }
-                this.AddToCache($"{valueInDb.Id}", valueInDb);
-                return Response<IModel, Error>.OkValueResponse(valueInDb);
-            default:
-                throw new ArgumentOutOfRangeException(nameof(operationType), operationType, null);
+            createUpdateAffected = this.ExecuteNonQuery(sql);
         }
+        catch (Exception ex)
+        {
+            return Response<IModel, Error>.BadRequestResponse($"Database query failed - {ex.Message}");
+        }
+
+        if (createUpdateAffected <= 0)
+            return Response<IModel, Error>.NotFoundResponse($"{value.Id} does not exist within the database");
+
+        // For Create/Update scenarios, id should always be the Guid enforced by the IModel interface
+        this.AddToCache($"{value.Id}", value);
+        return Response<IModel, Error>.OkResponse();
     }
 
-    private static PropertyInfo? GetId(OperationType operationType, IModel value, IEnumerable<PropertyInfo> properties)
+    private Response<IModel, Error> ReadDelete(OperationType operationType, Inputs inputs)
     {
-        properties = properties as PropertyInfo[] ?? properties.ToArray();
-        var id = properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Id");
+        // ReSharper disable once ConvertIfStatementToSwitchStatement
+        if (operationType is OperationType.Create or OperationType.Update)
+            return Response<IModel, Error>.BadRequestResponse($"{operationType} is not supported");
 
-        if (id is not null)
+        if (operationType is OperationType.Read)
         {
-            var idValue = id.GetValue(value);
-            if (idValue is null) return null;
-
-            var defaultValue = Activator.CreateInstance(id.PropertyType);
-            if (idValue == defaultValue) id = null;
+            var valueInCache = (IModel?)this.GetFromCache($"{inputs.PropertyValue}");
+            if (valueInCache is not null)
+                return Response<IModel, Error>.OkValueResponse(valueInCache);
         }
 
-        if (operationType is not (OperationType.Read or OperationType.Delete)) return id;
+        var valueType = GetValueType(null, inputs);
+        if (valueType is null)
+            return Response<IModel, Error>.ServerErrorResponse("Failed to determine value type");
 
-        PropertyInfo? subId = null;
-        subId = value.GetType().Name switch
+        var properties = valueType.GetProperties();
+
+        var tableName = $"{valueType.Name}s";
+        var sql = operationType is OperationType.Read
+            ? GetReadSql(inputs, tableName)
+            : GetDeleteSql(inputs, tableName);
+
+        if (operationType is OperationType.Read)
         {
-            "Role" => properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Name"),
-            "User" => properties.FirstOrDefault(propertyInfo => propertyInfo.Name == "Email"),
-            _ => subId
-        };
-
-        // ReSharper disable once InvertIf
-        if (subId is not null)
-        {
-            var subIdValue = subId.GetValue(value);
-            if (subIdValue is null) return id;
-
-            switch (subIdValue)
+            ExecuteReaderResponse readerResponse;
+            try
             {
-                case string val:
-                    subId = string.IsNullOrEmpty(val) ? null : subId;
-                    break;
-                default:
-                    var defaultValue = Activator.CreateInstance(subId.PropertyType);
-                    if (subIdValue == defaultValue) subId = null;
-                    break;
+                readerResponse = this.ExecuteReader(sql);
             }
+            catch (Exception ex)
+            {
+                return Response<IModel, Error>.ServerErrorResponse($"Database query failed - {ex.Message}");
+            }
+
+            if (!readerResponse.Reader.Read())
+                return Response<IModel, Error>.NotFoundResponse($"{inputs.PropertyValue} does not exist within the database");
+
+            var propertyValues = new object[properties.Length];
+            readerResponse.Reader.GetValues(propertyValues);
+            readerResponse.Dispose();
+
+            var valueInDb = (IModel?)Activator.CreateInstance("Application", $"Application.Models.{valueType.Name}")?.Unwrap();
+            if (valueInDb is null)
+                return Response<IModel, Error>.BadRequestResponse($"Unable to instantiate Application.Models.{valueType.Name}");
+
+            foreach (var property in properties.Zip(propertyValues, Tuple.Create))
+            {
+                GetDatabaseValue(valueInDb, property);
+            }
+            this.AddToCache($"{valueInDb.Id}", valueInDb);
+            return Response<IModel, Error>.OkValueResponse(valueInDb);
         }
 
-        return subId ?? id;
+        // Recursive call to ensure I have the Guid to remove the item from the cache
+        var dbResponse = this.ReadDelete(OperationType.Read, inputs);
+        if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
+            return Response<IModel, Error>.BadRequestResponse($"{inputs.PropertyValue} does not exist within the database");
+
+        int deleteAffected;
+        try
+        {
+            deleteAffected = this.ExecuteNonQuery(sql);
+        }
+        catch (Exception ex)
+        {
+            return Response<IModel, Error>.ServerErrorResponse($"Database query failed - {ex.Message}");
+        }
+
+        if (deleteAffected <= 0)
+            return Response<IModel, Error>.NotFoundResponse($"{inputs.PropertyValue} does not exist within the database");
+
+        Debug.Assert(dbResponse.Value != null, "dbResponse.Value != null");
+        this.DeleteFromCache(dbResponse.Value.Id);
+        return Response<IModel, Error>.OkResponse();
+    }
+
+    private static Type? GetValueType(IModel? value, Inputs? inputs)
+    {
+        try
+        {
+            if (value is null && inputs is not null)
+                return Type.GetType($"Application.Models.{inputs.Value.ModelTypeName}")
+                    ?? throw new Exception($"Failed to find type for {inputs.Value.ModelTypeName}");
+
+            return value?.GetType();
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static string GetCreateSql(IModel value, IEnumerable<PropertyInfo> properties, string tableName)
@@ -185,32 +189,30 @@ public class Database
         return $"INSERT INTO {tableName} ({columnHeaders}) VALUES ({columnValues});";
     }
 
-    private static string GetReadSql(IModel value, string tableName, PropertyInfo id)
+    private static string GetReadSql(Inputs inputs, string tableName)
     {
-        var conditionValue = GetConditionValue(value, id);
-        return $"SELECT * FROM {tableName} WHERE {id.Name} = {conditionValue};";
+        var conditionValue = GetConditionValue(inputs);
+        return $"SELECT * FROM {tableName} WHERE {inputs.PropertyName} = {conditionValue};";
     }
 
-    private static string GetUpdateSql(IModel value, IEnumerable<PropertyInfo> properties, string tableName, PropertyInfo id)
+    private static string GetUpdateSql(IModel value, IEnumerable<PropertyInfo> properties, string tableName)
     {
-        var conditionValue = GetConditionValue(value, id);
         var columns = GetColumns(value, properties);
-        return $"UPDATE {tableName} SET {columns} WHERE {id.Name} = {conditionValue};";
+        return $"UPDATE {tableName} SET {columns} WHERE Id = \"{value.Id}\";";
     }
 
-    private static string GetDeleteSql(IModel value, string tableName, PropertyInfo id)
+    private static string GetDeleteSql(Inputs inputs, string tableName)
     {
-        var conditionValue = GetConditionValue(value, id);
-        return $"DELETE FROM {tableName} WHERE {id.Name} = {conditionValue}";
+        var conditionValue = GetConditionValue(inputs);
+        return $"DELETE FROM {tableName} WHERE {inputs.PropertyName} = {conditionValue}";
     }
 
-    private static object? GetConditionValue(IModel value, PropertyInfo property)
+    private static object GetConditionValue(Inputs inputs)
     {
-        var conditionValue = property.GetValue(value);
-        conditionValue = conditionValue switch
+        var conditionValue = inputs.PropertyValue switch
         {
-            string or Guid => $"\"{conditionValue}\"",
-            _ => conditionValue
+            string or Guid => $"\"{inputs.PropertyValue}\"",
+            _ => inputs.PropertyValue
         };
 
         return conditionValue;
@@ -283,47 +285,82 @@ public class Database
 
     private void CreateTables()
     {
-        const string sqlCreateTables = """
-            CREATE TABLE IF NOT EXISTS Funds (
-                Id TEXT PRIMARY KEY NOT NULL,
-                Name TEXT NOT NULL,
-                GrowthRate REAL NOT NULL,
-                Charge REAL NOT NULL
-            );
-           
-            CREATE TABLE IF NOT EXISTS Roles (
-                Id TEXT PRIMARY KEY NOT NULL,
-                Name TEXT NOT NULL
-            );
-            
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_Name on Roles(Name);
-           
-            CREATE TABLE IF NOT EXISTS Users (
-                Id TEXT PRIMARY KEY NOT NULL,
-                Email TEXT NOT NULL,
-                Password TEXT NOT NULL,
-                AuthenticationData TEXT,
-                FirstName TEXT,
-                LastName TEXT,
-                RoleName TEXT NOT NULL REFERENCES Roles(Name) ON DELETE NO ACTION
-            );
+        var models =
+            from type in Assembly.GetExecutingAssembly().GetTypes()
+            where type.GetInterfaces().Contains(typeof(IModel)) && type.GetConstructor(Type.EmptyTypes) != null
+            select Activator.CreateInstance(type) as IModel;
 
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_Email ON Users(Email);
-            
-            CREATE TABLE IF NOT EXISTS Results (
-                Id TEXT PRIMARY KEY NOT NULL,
-                UserId INTEGER NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
-                TotalInvestment REAL NOT NULL,
-                ProjectedValue REAL NOT NULL
-            );
-        """;
+        var tablesSql = "";
+        var indexesSql = "";
+        foreach (var model in models)
+        {
+            var type = model.GetType();
+            var properties = type.GetProperties();
 
-        this.ExecuteNonQuery(sqlCreateTables);
+            var tableName = $"{type.Name}s";
+
+            var columns = "";
+            foreach (var property in properties)
+            {
+                var dbType = property.PropertyType.Name switch
+                {
+                    "decimal" => "REAL",
+                    _ => "TEXT"
+                };
+
+                var primaryKeyAttribute = property.GetCustomAttribute<PrimaryKeyAttribute>();
+                var primaryKey = primaryKeyAttribute is null
+                    ? ""
+                    : " PRIMARY KEY";
+
+                var uniqueAttribute = property.GetCustomAttribute<UniqueAttribute>();
+                var unique = uniqueAttribute is null
+                    ? ""
+                    : " UNIQUE";
+
+                var nonNullableAttribute = property.GetCustomAttribute<NonNullableAttribute>();
+                var nonNullable = nonNullableAttribute is null
+                    ? ""
+                    : " NOT NULL";
+
+                var foreignKeyAttribute = property.GetCustomAttribute<ForeignKeyAttribute>();
+                var foreignKey = foreignKeyAttribute is null
+                    ? ""
+                    : $" REFERENCES {foreignKeyAttribute.TableName}({foreignKeyAttribute.ColumnName}) ON DELETE {GetSqlForDeleteAction(foreignKeyAttribute.DeleteAction)}";
+
+                columns = columns == ""
+                    ? $"{property.Name} {dbType}{primaryKey}{unique}{nonNullable}{foreignKey}"
+                    : $"{columns}, {property.Name} {dbType}{primaryKey}{unique}{nonNullable}{foreignKey}";
+
+                var indexAttribute = property.GetCustomAttribute<IndexAttribute>();
+                if (indexAttribute is not null)
+                {
+                    indexesSql = indexesSql == ""
+                        ? $"CREATE UNIQUE INDEX IF NOT EXISTS idx_{property.Name} on {tableName}({property.Name});"
+                        : $"{indexesSql} CREATE UNIQUE INDEX IF NOT EXISTS idx_{property.Name} on {tableName}({property.Name});";
+                }
+            }
+            tablesSql = tablesSql == ""
+                ? $"CREATE TABLE IF NOT EXISTS {tableName} ({columns});"
+                : $"{tablesSql} CREATE TABLE IF NOT EXISTS {tableName} ({columns});";
+        }
+        this.ExecuteNonQuery(tablesSql);
+        this.ExecuteNonQuery(indexesSql);
+    }
+
+    private static string GetSqlForDeleteAction(ForeignKeyDeleteAction deleteAction)
+    {
+        return deleteAction switch
+        {
+            ForeignKeyDeleteAction.Cascade => "CASCADE",
+            _ => "NO ACTION"
+        };
     }
 
     private int ExecuteNonQuery(string sqlCommand)
     {
-        using var dbConnection = new SqliteConnection(ConnectionString); dbConnection.Open();
+        using var dbConnection = new SqliteConnection(ConnectionString);
+        dbConnection.Open();
         using var dbCommand = dbConnection.CreateCommand();
         dbCommand.CommandText = sqlCommand;
         return dbCommand.ExecuteNonQuery();
@@ -365,6 +402,13 @@ public class Database
 
         Cache.TryGetValue(key, out var value);
         return value;
+    }
+
+    private struct Inputs
+    {
+        public string PropertyName { get; init; }
+        public object PropertyValue { get; init; }
+        public string ModelTypeName { get; init; }
     }
 
     private enum OperationType

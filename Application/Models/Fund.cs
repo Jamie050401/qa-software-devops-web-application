@@ -2,10 +2,12 @@
 
 public class Fund : IModel
 {
-    public Guid Id { get; init; }
-    public string Name { get; init; } = "";
-    public decimal GrowthRate { get; init; }
-    public decimal Charge { get; init; }
-
-    public Metadata Metadata { get; } = new();
+    [PrimaryKey, NonNullable]
+    public required Guid Id { get; init; }
+    [Index, Unique, NonNullable]
+    public required string Name { get; init; } = "";
+    [NonNullable]
+    public required decimal GrowthRate { get; init; }
+    [NonNullable]
+    public required decimal Charge { get; init; }
 }

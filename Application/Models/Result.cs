@@ -2,10 +2,12 @@
 
 public class Result : IModel
 {
-    public Guid Id { get; init; }
-    public Guid UserId { get; init; }
-    public decimal TotalInvestment { get; init; }
-    public decimal ProjectedValue { get; init; }
-
-    public Metadata Metadata { get; } = new();
+    [PrimaryKey, NonNullable]
+    public required Guid Id { get; init; }
+    [ForeignKey(TableName = "Users", ColumnName = "Id", DeleteAction = ForeignKeyDeleteAction.Cascade), Index, NonNullable]
+    public required Guid UserId { get; init; }
+    [NonNullable]
+    public required decimal TotalInvestment { get; init; }
+    [NonNullable]
+    public required decimal ProjectedValue { get; init; }
 }
