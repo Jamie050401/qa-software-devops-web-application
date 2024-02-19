@@ -10,13 +10,5 @@ jobs:
     secrets: inherit
 
   Static-Analysis:
-    steps:
-      - name: Extract branch name
-        shell: bash
-        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
-        id: extract_branch
-      - name: Static analysis
-        uses: ./.github/workflows/reusable-static-analysis.yml
-        with:
-          git-branch: ${{ steps.extract_branch.outputs.branch }}
-        secrets: inherit
+    uses: ./.github/workflows/reusable-static-analysis.yml
+    secrets: inherit

@@ -22,6 +22,4 @@ jobs:
   Deploy:
     needs: Publish
     uses: ./.github/workflows/reusable-deploy.yml
-    with:
-      git-branch: "main"
     secrets: inherit
