@@ -89,8 +89,16 @@ public class Database
 
     private Response<IModel, Error> ReadDelete(OperationType operationType, Inputs inputs)
     {
+        // ReSharper disable once ConvertIfStatementToSwitchStatement
         if (operationType is OperationType.Create or OperationType.Update)
             return Response<IModel, Error>.BadRequestResponse($"{operationType} is not supported");
+
+        if (operationType is OperationType.Read)
+        {
+            var valueInCache = (IModel?)this.GetFromCache($"{inputs.PropertyValue}");
+            if (valueInCache is not null)
+                return Response<IModel, Error>.OkValueResponse(valueInCache);
+        }
 
         var valueType = GetValueType(null, inputs);
         if (valueType is null)
@@ -105,10 +113,6 @@ public class Database
 
         if (operationType is OperationType.Read)
         {
-            var valueInCache = (IModel?)this.GetFromCache($"{inputs.PropertyValue}");
-            if (valueInCache is not null)
-                return Response<IModel, Error>.OkValueResponse(valueInCache);
-
             ExecuteReaderResponse readerResponse;
             try
             {
