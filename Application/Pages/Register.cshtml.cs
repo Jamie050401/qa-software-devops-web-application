@@ -46,7 +46,7 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
         {
             Id = Guid.NewGuid(),
             Email = email,
-            Password = SecretHasher.Hash(password),
+            Password = Secret.Hash(password),
             FirstName = firstName,
             LastName = lastName,
             RoleId = role.Id

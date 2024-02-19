@@ -27,7 +27,7 @@ public static class Cookie
         if (expires is not null) cookieOptions.Expires = expires;
 
         var json = JsonConvert.SerializeObject(data);
-        var encrypted = StringCipher.Encrypt(json, PassPhrase);
+        var encrypted = Secret.Encrypt(json, PassPhrase);
         response.Cookies.Append(key, encrypted, cookieOptions);
     }
 
@@ -37,7 +37,7 @@ public static class Cookie
 
         if (cookie is null) return Response<TValue, Error>.NotFoundResponse();
 
-        var decrypted = StringCipher.Decrypt(cookie, PassPhrase);
+        var decrypted = Secret.Decrypt(cookie, PassPhrase);
         var data = JsonConvert.DeserializeObject<TValue>(decrypted);
         return data is null
             ? Response<TValue, Error>.NotFoundResponse()
