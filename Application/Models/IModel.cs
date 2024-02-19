@@ -1,5 +1,6 @@
 ﻿namespace Application.Models;
 
+// TODO - Determine approach to dynamically generate this enum at compile time (with values for any type that implements IModel)
 public enum Model
 {
     Fund,
