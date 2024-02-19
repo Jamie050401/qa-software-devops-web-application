@@ -111,7 +111,7 @@ public static class Session
         Debug.Assert(dbResponse.Value != null, "databaseResponse.Value != null");
         var userInDb = (User)dbResponse.Value;
         var isAuthenticated = userInDb.AuthenticationData is not null &&
-                              SecretHasher.Verify(authenticationData.Token, userInDb.AuthenticationData.Token) &&
+                              Secret.Verify(authenticationData.Token, userInDb.AuthenticationData.Token) &&
                               authenticationData.Source == userInDb.AuthenticationData.Source &&
                               authenticationData.Timestamp == userInDb.AuthenticationData.Timestamp &&
                               authenticationData.Expires == userInDb.AuthenticationData.Expires &&
@@ -140,7 +140,7 @@ public static class Session
                 var authenticationData = new AuthenticationData
                 {
                     Email = email,
-                    Token = Password.Generate(),
+                    Token = Secret.Generate(),
                     Source = connectionInfo.RemoteIpAddress is null
                         ? ""
                         : connectionInfo.RemoteIpAddress.ToString(),
@@ -149,7 +149,7 @@ public static class Session
                 };
                 Cookie.Store(response, Cookies.AuthenticationData, authenticationData, authenticationData.Expires, true);
 
-                authenticationData.Token = SecretHasher.Hash(authenticationData.Token);
+                authenticationData.Token = Secret.Hash(authenticationData.Token);
                 userInDb.AuthenticationData = authenticationData;
                 DatabaseManager.Database.Update(userInDb);
             }

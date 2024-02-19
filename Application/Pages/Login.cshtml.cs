@@ -42,7 +42,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         Debug.Assert(dbResponse.Value != null, "dbResponse.Value != null");
         var userInDb = (User)dbResponse.Value;
         Debug.Assert(userInDb.Password != null, "userInDb.Password != null");
-        if (email != userInDb.Email || !SecretHasher.Verify(password, userInDb.Password))
+        if (email != userInDb.Email || !Secret.Verify(password, userInDb.Password))
         {
             notyf.Error("Email or password was incorrect, please try again.");
             logger.Information("Login failure: supplied password does not match stored password hash.");
