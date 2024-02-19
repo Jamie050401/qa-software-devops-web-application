@@ -10,7 +10,7 @@ public class DatabaseCreate
 {
     private readonly DatabaseLogic _database;
     private readonly Guid _userGuid = Guid.NewGuid();
-    private const string RoleName = "Test Role";
+    private readonly Guid _roleGuid = Guid.NewGuid();
 
     public DatabaseCreate()
     {
@@ -21,12 +21,12 @@ public class DatabaseCreate
     [SetUp]
     public void DatabaseCreateSetUp()
     {
-        var roleResponse = _database.Read("Name", RoleName, "Role");
+        var roleResponse = _database.Read("Name", "Test Role", "Role");
         if (roleResponse.Status is ResponseStatus.Error || !roleResponse.HasValue)
             _database.Create(new Role
             {
-                Id = Guid.NewGuid(),
-                Name = RoleName
+                Id = _roleGuid,
+                Name = "Test Role"
             });
 
         var userResponse = _database.Read("Id", _userGuid, "User");
@@ -34,9 +34,9 @@ public class DatabaseCreate
             _database.Create(new User
             {
                 Id = _userGuid,
+                RoleId = _roleGuid,
                 Email = "test@one.com",
-                Password = "test",
-                RoleName = RoleName
+                Password = "test"
             });
     }
 
@@ -76,9 +76,9 @@ public class DatabaseCreate
         var user = new User
         {
             Id = Guid.NewGuid(),
+            RoleId = _roleGuid,
             Email = "test@two.com",
-            Password = "test",
-            RoleName = RoleName
+            Password = "test"
         };
 
         var actual = _database.Create(user);
@@ -92,6 +92,7 @@ public class DatabaseCreate
         var user = new User
         {
             Id = Guid.NewGuid(),
+            RoleId = _roleGuid,
             Email = "test@three.com",
             Password = "test",
             AuthenticationData = new AuthenticationData
@@ -103,8 +104,7 @@ public class DatabaseCreate
                 Expires = DateTimeOffset.UtcNow.AddDays(3)
             },
             FirstName = "Test",
-            LastName = "Three",
-            RoleName = RoleName
+            LastName = "Three"
         };
 
         var actual = _database.Create(user);
@@ -134,9 +134,9 @@ public class DatabaseUpdate
 {
     private readonly DatabaseLogic _database;
     private readonly Guid _fundGuid = Guid.NewGuid();
+    private readonly Guid _roleGuid = Guid.NewGuid();
     private readonly Guid _userGuid = Guid.NewGuid();
     private readonly Guid _resultGuid = Guid.NewGuid();
-    private const string RoleName = "Test Role";
 
     public DatabaseUpdate()
     {
@@ -152,14 +152,15 @@ public class DatabaseUpdate
         });
         _database.Create(new Role
         {
-            Name = RoleName
+            Id = _roleGuid,
+            Name = "Test Role"
         });
         _database.Create(new User
         {
             Id = _userGuid,
+            RoleId = _roleGuid,
             Email = "test@user.com",
-            Password = "TestUser",
-            RoleName = RoleName
+            Password = "TestUser"
         });
         _database.Create(new Result
         {
@@ -185,6 +186,54 @@ public class DatabaseUpdate
 
         Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
+
+    [Test]
+    public void UpdateRole()
+    {
+        var role = new Role
+        {
+            Id = _roleGuid,
+            Name = "New Test Role"
+        };
+
+        var actual = _database.Update(role);
+
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
+    }
+
+    [Test]
+    public void UpdateUser()
+    {
+        var user = new User
+        {
+            Id = _userGuid,
+            RoleId = _roleGuid,
+            Email = "test@user.com",
+            Password = "TestUser",
+            FirstName = "Test",
+            LastName = "User"
+        };
+
+        var actual = _database.Update(user);
+
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
+    }
+
+    [Test]
+    public void UpdateResult()
+    {
+        var result = new Result
+        {
+            Id = _resultGuid,
+            UserId = _userGuid,
+            ProjectedValue = 1000.0M,
+            TotalInvestment = 1000.0M
+        };
+
+        var actual = _database.Update(result);
+
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
+    }
 }
 
 [TestFixture]
@@ -194,9 +243,9 @@ public class DatabaseRead
     private readonly Guid _fundGuid = Guid.NewGuid();
     private readonly Guid _roleGuid = Guid.NewGuid();
     private readonly Guid _userGuid = Guid.NewGuid();
+    private readonly Guid _resultGuid = Guid.NewGuid();
     private readonly DateTime _timestamp = DateTime.UtcNow;
     private readonly DateTimeOffset _expires = DateTimeOffset.UtcNow.AddDays(3);
-    private const string RoleName = "Test Role";
 
     public DatabaseRead()
     {
@@ -212,11 +261,12 @@ public class DatabaseRead
         _database.Create(new Role
         {
             Id = _roleGuid,
-            Name = RoleName
+            Name = "Test Role"
         });
         _database.Create(new User
         {
             Id = _userGuid,
+            RoleId = _roleGuid,
             Email = "test@one.com",
             Password = "test",
             AuthenticationData = new AuthenticationData
@@ -228,8 +278,14 @@ public class DatabaseRead
                 Expires = _expires
             },
             FirstName = "Test",
-            LastName = "One",
-            RoleName = RoleName
+            LastName = "One"
+        });
+        _database.Create(new Result
+        {
+            Id = _resultGuid,
+            UserId = _userGuid,
+            TotalInvestment = 0.0M,
+            ProjectedValue = 0.0M
         });
     }
 
@@ -248,6 +304,18 @@ public class DatabaseRead
     }
 
     [Test]
+    public void ReadRole()
+    {
+        var actual = _database.Read("Name", "Test Role", "Role");
+
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkValueResponse(new Role
+        {
+            Id = _roleGuid,
+            Name = "Test Role"
+        })));
+    }
+
+    [Test]
     public void ReadUser()
     {
         var actual = _database.Read("Id", _userGuid, "User");
@@ -255,6 +323,7 @@ public class DatabaseRead
         Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkValueResponse(new User
         {
             Id = _userGuid,
+            RoleId = _roleGuid,
             Email = "test@one.com",
             Password = "test",
             AuthenticationData = new AuthenticationData
@@ -266,8 +335,112 @@ public class DatabaseRead
                 Expires = _expires
             },
             FirstName = "Test",
-            LastName = "One",
-            RoleName = RoleName
+            LastName = "One"
         })));
+    }
+
+    [Test]
+    public void ReadResult()
+    {
+        var actual = _database.Read("Id", _resultGuid, "Result");
+
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkValueResponse(new Result
+        {
+            Id = _resultGuid,
+            UserId = _userGuid,
+            TotalInvestment = 0.0M,
+            ProjectedValue = 0.0M
+        })));
+    }
+}
+
+[TestFixture]
+public class DatabaseDelete
+{
+    private readonly DatabaseLogic _database;
+    private readonly Guid _fundGuid = Guid.NewGuid();
+    private readonly Guid _roleGuid = Guid.NewGuid();
+    private readonly Guid _userGuid = Guid.NewGuid();
+    private readonly Guid _resultGuid = Guid.NewGuid();
+
+    public DatabaseDelete()
+    {
+        File.Delete("Tests/deleteDatabase.sqlite");
+        _database = new DatabaseLogic("Tests", "deleteDatabase");
+    }
+
+    [SetUp]
+    public void DatabaseSetup()
+    {
+        _database.Create(new Fund
+        {
+            Id = _fundGuid,
+            Name = "Test Fund",
+            GrowthRate = 0.0M,
+            Charge = 0.0M
+        });
+        _database.Create(new Role
+        {
+            Id = _roleGuid,
+            Name = "Test Role"
+        });
+        _database.Create(new User
+        {
+            Id = _userGuid,
+            RoleId = _roleGuid,
+            Email = "test@one.com",
+            Password = "test",
+            FirstName = "Test",
+            LastName = "One"
+        });
+        _database.Create(new Result
+        {
+            Id = _resultGuid,
+            UserId = _userGuid,
+            TotalInvestment = 0.0M,
+            ProjectedValue = 0.0M
+        });
+    }
+
+    [Test]
+    public void DeleteFund()
+    {
+        var actual = _database.Delete("Name", "Test Fund", "Fund");
+
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
+    }
+
+    [Test]
+    public void TryDeleteRole()
+    {
+        var actual = _database.Delete("Name", "Test Role", "Role");
+
+        Assert.That(actual.Status, Is.EqualTo(ResponseStatus.Error));
+        Assert.That(actual.Errors[0].ErrorCode, Is.EqualTo(500));
+    }
+
+    [Test]
+    public void DeleteRole()
+    {
+        _database.Delete("Id", _userGuid, "User");
+        var actual = _database.Delete("Name", "Test Role", "Role");
+
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
+    }
+
+    [Test]
+    public void DeleteUser()
+    {
+        var actual = _database.Delete("Id", _userGuid, "User");
+
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
+    }
+
+    [Test]
+    public void DeleteResult()
+    {
+        var actual = _database.Delete("Id", _resultGuid, "Result");
+
+        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
 }

@@ -63,21 +63,27 @@ public class Database
             return Response<IModel, Error>.ServerErrorResponse($"Failed to determine value type");
 
         var properties = valueType.GetProperties();
-        var id = valueType.GetProperty("Id");
-        if (id is null)
-            return Response<IModel, Error>.BadRequestResponse("Unable to determine Id from supplied model");
 
         var tableName = $"{valueType.Name}s";
         var sql = operationType is OperationType.Create
             ? GetCreateSql(value, properties, tableName)
-            : GetUpdateSql(value, properties, tableName, id);
+            : GetUpdateSql(value, properties, tableName);
 
-        var createUpdateAffected = this.ExecuteNonQuery(sql);
+        int createUpdateAffected;
+        try
+        {
+            createUpdateAffected = this.ExecuteNonQuery(sql);
+        }
+        catch (Exception ex)
+        {
+            return Response<IModel, Error>.BadRequestResponse($"Database query failed - {ex.Message}");
+        }
+
         if (createUpdateAffected <= 0)
-            return Response<IModel, Error>.BadRequestResponse("Database query failed");
+            return Response<IModel, Error>.NotFoundResponse($"{value.Id} does not exist within the database");
 
         // For Create/Update scenarios, id should always be the Guid enforced by the IModel interface
-        this.AddToCache($"{id.GetValue(value)}", value);
+        this.AddToCache($"{value.Id}", value);
         return Response<IModel, Error>.OkResponse();
     }
 
@@ -103,7 +109,16 @@ public class Database
             if (valueInCache is not null)
                 return Response<IModel, Error>.OkValueResponse(valueInCache);
 
-            var readerResponse = this.ExecuteReader(sql);
+            ExecuteReaderResponse readerResponse;
+            try
+            {
+                readerResponse = this.ExecuteReader(sql);
+            }
+            catch (Exception ex)
+            {
+                return Response<IModel, Error>.ServerErrorResponse($"Database query failed - {ex.Message}");
+            }
+
             if (!readerResponse.Reader.Read())
                 return Response<IModel, Error>.NotFoundResponse($"{inputs.PropertyValue} does not exist within the database");
 
@@ -128,9 +143,18 @@ public class Database
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
             return Response<IModel, Error>.BadRequestResponse($"{inputs.PropertyValue} does not exist within the database");
 
-        var deleteAffected = this.ExecuteNonQuery(sql);
+        int deleteAffected;
+        try
+        {
+            deleteAffected = this.ExecuteNonQuery(sql);
+        }
+        catch (Exception ex)
+        {
+            return Response<IModel, Error>.ServerErrorResponse($"Database query failed - {ex.Message}");
+        }
+
         if (deleteAffected <= 0)
-            return Response<IModel, Error>.BadRequestResponse("Database query failed");
+            return Response<IModel, Error>.NotFoundResponse($"{inputs.PropertyValue} does not exist within the database");
 
         Debug.Assert(dbResponse.Value != null, "dbResponse.Value != null");
         this.DeleteFromCache(dbResponse.Value.Id);
@@ -167,29 +191,16 @@ public class Database
         return $"SELECT * FROM {tableName} WHERE {inputs.PropertyName} = {conditionValue};";
     }
 
-    private static string GetUpdateSql(IModel value, IEnumerable<PropertyInfo> properties, string tableName, PropertyInfo id)
+    private static string GetUpdateSql(IModel value, IEnumerable<PropertyInfo> properties, string tableName)
     {
-        var conditionValue = GetConditionValue(value, id);
         var columns = GetColumns(value, properties);
-        return $"UPDATE {tableName} SET {columns} WHERE {id.Name} = {conditionValue};";
+        return $"UPDATE {tableName} SET {columns} WHERE Id = \"{value.Id}\";";
     }
 
     private static string GetDeleteSql(Inputs inputs, string tableName)
     {
         var conditionValue = GetConditionValue(inputs);
         return $"DELETE FROM {tableName} WHERE {inputs.PropertyName} = {conditionValue}";
-    }
-
-    private static object? GetConditionValue(IModel value, PropertyInfo property)
-    {
-        var conditionValue = property.GetValue(value);
-        conditionValue = conditionValue switch
-        {
-            string or Guid => $"\"{conditionValue}\"",
-            _ => conditionValue
-        };
-
-        return conditionValue;
     }
 
     private static object GetConditionValue(Inputs inputs)
@@ -344,7 +355,8 @@ public class Database
 
     private int ExecuteNonQuery(string sqlCommand)
     {
-        using var dbConnection = new SqliteConnection(ConnectionString); dbConnection.Open();
+        using var dbConnection = new SqliteConnection(ConnectionString);
+        dbConnection.Open();
         using var dbCommand = dbConnection.CreateCommand();
         dbCommand.CommandText = sqlCommand;
         return dbCommand.ExecuteNonQuery();

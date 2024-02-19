@@ -6,6 +6,7 @@ using Data;
 using ILogger = Serilog.ILogger;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Models;
+using System.Diagnostics;
 
 public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
 {
@@ -30,6 +31,17 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
         var isPasswordValid = Validate.Password(notyf, password, confirmPassword);
         if (!isPasswordValid) return;
 
+        var dbResponse = DatabaseManager.Database.Read("Name", "Default", "Role");
+        if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
+        {
+            notyf.Error("Failed to register user.");
+            logger.Information("Registration failure: unable to retrieve default role");
+            return;
+        }
+
+        Debug.Assert(dbResponse.Value != null, "dbResponse.Value != null");
+        var role = (Role)dbResponse.Value;
+
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -37,10 +49,10 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
             Password = SecretHasher.Hash(password),
             FirstName = firstName,
             LastName = lastName,
-            RoleName = "Default"
+            RoleId = role.Id
         };
 
-        var dbResponse = DatabaseManager.Database.Create(user);
+        dbResponse = DatabaseManager.Database.Create(user);
         if (dbResponse.Status is ResponseStatus.Error)
         {
             notyf.Error("Failed to register user.");

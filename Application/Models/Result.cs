@@ -3,11 +3,11 @@
 public class Result : IModel
 {
     [PrimaryKey, NonNullable]
-    public Guid Id { get; init; }
+    public required Guid Id { get; init; }
     [ForeignKey(TableName = "Users", ColumnName = "Id", DeleteAction = ForeignKeyDeleteAction.Cascade), Index, NonNullable]
-    public Guid UserId { get; init; }
+    public required Guid UserId { get; init; }
     [NonNullable]
-    public decimal TotalInvestment { get; init; }
+    public required decimal TotalInvestment { get; init; }
     [NonNullable]
-    public decimal ProjectedValue { get; init; }
+    public required decimal ProjectedValue { get; init; }
 }

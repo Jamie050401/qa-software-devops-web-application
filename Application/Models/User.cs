@@ -5,14 +5,14 @@ using Common;
 public class User : IModel
 {
     [PrimaryKey, NonNullable]
-    public Guid Id { get; init; }
+    public required Guid Id { get; init; }
+    [ForeignKey(TableName = "Roles", ColumnName = "Id", DeleteAction = ForeignKeyDeleteAction.None), NonNullable]
+    public required Guid RoleId { get; init; }
     [Index, Unique, NonNullable]
-    public string Email { get; init; } = "";
+    public required string Email { get; init; } = "";
     [NonNullable]
-    public string Password { get; init; } = "";
+    public required string Password { get; init; } = "";
     public AuthenticationData? AuthenticationData { get; set; }
     public string? FirstName { get; init; }
     public string? LastName { get; init; }
-    [ForeignKey(TableName = "Roles", ColumnName = "Name", DeleteAction = ForeignKeyDeleteAction.None), NonNullable]
-    public string RoleName { get; init; } = "";
 }
