@@ -42,7 +42,7 @@ public static class StringCipher
         var cipherTextBytesWithSaltAndIv = Convert.FromBase64String(cipherText);
         var salt = cipherTextBytesWithSaltAndIv.Take(KeySize / 8).ToArray();
         var iv = cipherTextBytesWithSaltAndIv.Skip(KeySize / 8).Take(KeySize / 8).ToArray();
-        var cipherTextBytes = cipherTextBytesWithSaltAndIv.Skip((KeySize / 8) * 2).Take(cipherTextBytesWithSaltAndIv.Length - KeySize / 8 * 2).ToArray();
+        var cipherTextBytes = cipherTextBytesWithSaltAndIv.Skip(KeySize / 8 * 2).Take(cipherTextBytesWithSaltAndIv.Length - KeySize / 8 * 2).ToArray();
         var keyBytes = Rfc2898DeriveBytes.Pbkdf2(passPhrase, salt, DerivationIterations, Algorithm, KeySize / 8);
         using var symmetricKey = Aes.Create();
         symmetricKey.BlockSize = KeySize;

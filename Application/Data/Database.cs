@@ -60,7 +60,7 @@ public class Database
 
         var valueType = GetValueType(value, null);
         if (valueType is null)
-            return Response<IModel, Error>.ServerErrorResponse($"Failed to determine value type");
+            return Response<IModel, Error>.ServerErrorResponse("Failed to determine value type");
 
         var properties = valueType.GetProperties();
 
@@ -102,7 +102,7 @@ public class Database
 
         var valueType = GetValueType(null, inputs);
         if (valueType is null)
-            return Response<IModel, Error>.ServerErrorResponse($"Failed to determine value type");
+            return Response<IModel, Error>.ServerErrorResponse("Failed to determine value type");
 
         var properties = valueType.GetProperties();
 
