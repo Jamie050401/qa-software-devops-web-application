@@ -14,6 +14,7 @@ public class DatabaseCreate
 
     public DatabaseCreate()
     {
+        Directory.CreateDirectory("Tests");
         File.Delete("Tests/createDatabase.sqlite");
         _database = new DatabaseLogic("Tests", "createDatabase");
     }
@@ -140,6 +141,7 @@ public class DatabaseUpdate
 
     public DatabaseUpdate()
     {
+        Directory.CreateDirectory("Tests");
         File.Delete("Tests/updateDatabase.sqlite");
         _database = new DatabaseLogic("Tests", "updateDatabase");
 
@@ -249,6 +251,7 @@ public class DatabaseRead
 
     public DatabaseRead()
     {
+        Directory.CreateDirectory("Tests");
         File.Delete("Tests/readDatabase.sqlite");
         _database = new DatabaseLogic("Tests", "readDatabase");
         _database.Create(new Fund
@@ -365,6 +368,7 @@ public class DatabaseDelete
 
     public DatabaseDelete()
     {
+        Directory.CreateDirectory("Tests");
         File.Delete("Tests/deleteDatabase.sqlite");
         _database = new DatabaseLogic("Tests", "deleteDatabase");
     }
