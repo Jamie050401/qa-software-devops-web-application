@@ -31,7 +31,7 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
         var isPasswordValid = Validate.Password(notyf, password, confirmPassword);
         if (!isPasswordValid) return;
 
-        var dbResponse = DatabaseManager.Database.Read("Name", "Default", Model.Role);
+        var dbResponse = DatabaseManager.Database.Read(Role.GetProperty("Name"), "Default");
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
             notyf.Error("Failed to register user.");

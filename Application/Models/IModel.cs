@@ -1,17 +1,20 @@
 ﻿namespace Application.Models;
 
-// TODO - Determine approach to dynamically generate this enum at compile time (with values for any type that implements IModel)
-public enum Model
-{
-    Fund,
-    Role,
-    User,
-    Result
-}
+using System.Reflection;
 
 public interface IModel
 {
     public Guid Id { get; }
+}
+
+public abstract class ModelBase<T> : IModel where T : ModelBase<T>
+{
+    public abstract Guid Id { get; init; }
+
+    public static PropertyInfo? GetProperty(string propertyName)
+    {
+        return typeof(T).GetProperty(propertyName);
+    }
 }
 
 [AttributeUsage(AttributeTargets.Property)]

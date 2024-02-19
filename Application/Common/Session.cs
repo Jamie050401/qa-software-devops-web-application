@@ -101,7 +101,7 @@ public static class Session
         }
         Debug.Assert(cookieResponse.Value != null, "cookieResponse.Value != null");
         var authenticationData = cookieResponse.Value;
-        var dbResponse = DatabaseManager.Database.Read("Email", authenticationData.Email, Model.User);
+        var dbResponse = DatabaseManager.Database.Read(User.GetProperty("Email"), authenticationData.Email);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
             logger.Information("Login failure: unable to find user matching authentication data stored in cookies");

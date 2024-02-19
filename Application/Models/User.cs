@@ -2,10 +2,10 @@
 
 using Common;
 
-public class User : IModel
+public class User : ModelBase<User>
 {
     [PrimaryKey, NonNullable]
-    public required Guid Id { get; init; }
+    public override Guid Id { get; init; }
     [ForeignKey(TableName = "Roles", ColumnName = "Id", DeleteAction = ForeignKeyDeleteAction.None), NonNullable]
     public required Guid RoleId { get; init; }
     [Index, Unique, NonNullable]

@@ -16,7 +16,7 @@ public static class DatabaseManager
 
     public static void InitialiseDatabase()
     {
-        var dbResponse = Database.Read("Name", DefaultRoleName, Model.Role);
+        var dbResponse = Database.Read(Role.GetProperty("Name"), DefaultRoleName);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
             Database.Create(new Role
             {
@@ -24,7 +24,7 @@ public static class DatabaseManager
                 Name = DefaultRoleName
             });
 
-        dbResponse = Database.Read("Name", AdminRoleName, Model.Role);
+        dbResponse = Database.Read(Role.GetProperty("Name"), AdminRoleName);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
             Database.Create(new Role
             {
@@ -34,7 +34,7 @@ public static class DatabaseManager
 
         foreach (var fundName in FundNames)
         {
-            dbResponse = Database.Read("Name", fundName, Model.Fund);
+            dbResponse = Database.Read(Fund.GetProperty("Name"), fundName);
             if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
             {
                 Database.Create(new Fund

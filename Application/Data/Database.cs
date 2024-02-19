@@ -24,13 +24,15 @@ public class Database
         return this.CreateUpdate(OperationType.Create, value);
     }
 
-    public Response<IModel, Error> Read(string propertyName, object propertyValue, Model model)
+    public Response<IModel, Error> Read(PropertyInfo? property, object propertyValue)
     {
+        if (property is null)
+            return Response<IModel, Error>.BadRequestResponse($"{nameof(property)} cannot be null");
+
         var inputs = new Inputs
         {
-            PropertyName = propertyName,
-            PropertyValue = propertyValue,
-            Model = model
+            Property = property,
+            PropertyValue = propertyValue
         };
 
         return this.ReadDelete(OperationType.Read, inputs);
@@ -41,13 +43,15 @@ public class Database
         return this.CreateUpdate(OperationType.Update, value);
     }
 
-    public Response<IModel, Error> Delete(string propertyName, object propertyValue, Model model)
+    public Response<IModel, Error> Delete(PropertyInfo? property, object propertyValue)
     {
+        if (property is null)
+            return Response<IModel, Error>.BadRequestResponse($"{nameof(property)} cannot be null");
+
         var inputs = new Inputs
         {
-            PropertyName = propertyName,
-            PropertyValue = propertyValue,
-            Model = model
+            Property = property,
+            PropertyValue = propertyValue
         };
 
         return this.ReadDelete(OperationType.Delete, inputs);
@@ -170,8 +174,8 @@ public class Database
         try
         {
             if (value is null && inputs is not null)
-                return Type.GetType($"Application.Models.{inputs.Value.ModelTypeName}")
-                    ?? throw new Exception($"Failed to find type for {inputs.Value.ModelTypeName}");
+                return inputs.Value.Property.ReflectedType
+                       ?? throw new Exception($"Failed to find type for {inputs.Value.Property.ReflectedType}");
 
             return value?.GetType();
         }
@@ -192,7 +196,7 @@ public class Database
     private static string GetReadSql(Inputs inputs, string tableName)
     {
         var conditionValue = GetConditionValue(inputs);
-        return $"SELECT * FROM {tableName} WHERE {inputs.PropertyName} = {conditionValue};";
+        return $"SELECT * FROM {tableName} WHERE {inputs.Property.Name} = {conditionValue};";
     }
 
     private static string GetUpdateSql(IModel value, IEnumerable<PropertyInfo> properties, string tableName)
@@ -204,7 +208,7 @@ public class Database
     private static string GetDeleteSql(Inputs inputs, string tableName)
     {
         var conditionValue = GetConditionValue(inputs);
-        return $"DELETE FROM {tableName} WHERE {inputs.PropertyName} = {conditionValue}";
+        return $"DELETE FROM {tableName} WHERE {inputs.Property.Name} = {conditionValue}";
     }
 
     private static object GetConditionValue(Inputs inputs)
@@ -406,10 +410,8 @@ public class Database
 
     private readonly struct Inputs
     {
-        public string PropertyName { get; init; }
+        public PropertyInfo Property { get; init; }
         public object PropertyValue { get; init; }
-        public Model Model { get; init; }
-        public string ModelTypeName => this.Model.ToString();
     }
 
     private enum OperationType

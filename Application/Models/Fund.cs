@@ -1,9 +1,9 @@
 ﻿namespace Application.Models;
 
-public class Fund : IModel
+public class Fund : ModelBase<Fund>
 {
     [PrimaryKey, NonNullable]
-    public required Guid Id { get; init; }
+    public override Guid Id { get; init; }
     [Index, Unique, NonNullable]
     public required string Name { get; init; } = "";
     [NonNullable]
