@@ -2,6 +2,10 @@ name: Reusable Static Analysis
 
 on:
   workflow_call:
+    inputs:
+      git-branch:
+        required: true
+        type: string
 
 jobs:
   Static-Analysis:
@@ -10,7 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: "main"
+          ref: ${{ inputs.git-branch }}
           fetch-depth: 0
       - name: Run Qodana
         uses: JetBrains/qodana-action@v2023.3

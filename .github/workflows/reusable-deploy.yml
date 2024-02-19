@@ -12,9 +12,11 @@ jobs:
       with:
         ref: "main"
     - name: Install dependencies
+      shell: bash
       run: |
         sudo apt-get install -y jq
     - name: Destroy existing stack
+      shell: bash
       run: |
         stacks=$(curl -X GET -H "X-API-Key: ${{ secrets.PORTAINER_API_KEY }}" "${{ secrets.PORTAINER_HOST }}/api/stacks")
         stack=$(echo $stacks | jq '.[] | select(.Name=="qa-web-application-2")')
@@ -24,6 +26,7 @@ jobs:
         curl -X DELETE -H "X-API-Key: ${{ secrets.PORTAINER_API_KEY }}" "${{ secrets.PORTAINER_HOST }}/api/endpoints/${{ secrets.PORTAINER_ENV_ID }}/docker/images/jamie050401/qa-web-application-2:latest"
         sleep 1
     - name: Deploy to Portainer
+      shell: bash
       run: |
         curl -X POST -H "X-API-Key: ${{ secrets.PORTAINER_API_KEY }}" \
         -F "Name=qa-web-application-2" \
