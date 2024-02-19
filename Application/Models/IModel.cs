@@ -1,5 +1,18 @@
 ﻿namespace Application.Models;
 
+public enum Model
+{
+    Fund,
+    Role,
+    User,
+    Result
+}
+
+public interface IModel
+{
+    public Guid Id { get; }
+}
+
 [AttributeUsage(AttributeTargets.Property)]
 public class PrimaryKeyAttribute : Attribute;
 
@@ -25,8 +38,3 @@ public class UniqueAttribute : Attribute;
 
 [AttributeUsage(AttributeTargets.Property)]
 public class NonNullableAttribute : Attribute;
-
-public interface IModel
-{
-    public Guid Id { get; }
-}

@@ -22,7 +22,7 @@ public class DatabaseCreate
     [SetUp]
     public void DatabaseCreateSetUp()
     {
-        var roleResponse = _database.Read("Name", "Test Role", "Role");
+        var roleResponse = _database.Read("Name", "Test Role", Model.Role);
         if (roleResponse.Status is ResponseStatus.Error || !roleResponse.HasValue)
             _database.Create(new Role
             {
@@ -30,7 +30,7 @@ public class DatabaseCreate
                 Name = "Test Role"
             });
 
-        var userResponse = _database.Read("Id", _userGuid, "User");
+        var userResponse = _database.Read("Id", _userGuid, Model.User);
         if (userResponse.Status is ResponseStatus.Error || !userResponse.HasValue)
             _database.Create(new User
             {
@@ -295,7 +295,7 @@ public class DatabaseRead
     [Test]
     public void ReadFund()
     {
-        var actual = _database.Read("Id", _fundGuid, "Fund");
+        var actual = _database.Read("Id", _fundGuid, Model.Fund);
 
         Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkValueResponse(new Fund
         {
@@ -309,7 +309,7 @@ public class DatabaseRead
     [Test]
     public void ReadRole()
     {
-        var actual = _database.Read("Name", "Test Role", "Role");
+        var actual = _database.Read("Name", "Test Role", Model.Role);
 
         Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkValueResponse(new Role
         {
@@ -321,7 +321,7 @@ public class DatabaseRead
     [Test]
     public void ReadUser()
     {
-        var actual = _database.Read("Id", _userGuid, "User");
+        var actual = _database.Read("Id", _userGuid, Model.User);
 
         Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkValueResponse(new User
         {
@@ -345,7 +345,7 @@ public class DatabaseRead
     [Test]
     public void ReadResult()
     {
-        var actual = _database.Read("Id", _resultGuid, "Result");
+        var actual = _database.Read("Id", _resultGuid, Model.Result);
 
         Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkValueResponse(new Result
         {
@@ -409,7 +409,7 @@ public class DatabaseDelete
     [Test]
     public void DeleteFund()
     {
-        var actual = _database.Delete("Name", "Test Fund", "Fund");
+        var actual = _database.Delete("Name", "Test Fund", Model.Fund);
 
         Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
@@ -417,7 +417,7 @@ public class DatabaseDelete
     [Test]
     public void TryDeleteRole()
     {
-        var actual = _database.Delete("Name", "Test Role", "Role");
+        var actual = _database.Delete("Name", "Test Role", Model.Role);
 
         Assert.That(actual.Status, Is.EqualTo(ResponseStatus.Error));
         Assert.That(actual.Errors[0].ErrorCode, Is.EqualTo(500));
@@ -426,8 +426,8 @@ public class DatabaseDelete
     [Test]
     public void DeleteRole()
     {
-        _database.Delete("Id", _userGuid, "User");
-        var actual = _database.Delete("Name", "Test Role", "Role");
+        _database.Delete("Id", _userGuid, Model.User);
+        var actual = _database.Delete("Name", "Test Role", Model.Role);
 
         Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
@@ -435,7 +435,7 @@ public class DatabaseDelete
     [Test]
     public void DeleteUser()
     {
-        var actual = _database.Delete("Id", _userGuid, "User");
+        var actual = _database.Delete("Id", _userGuid, Model.User);
 
         Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }
@@ -443,7 +443,7 @@ public class DatabaseDelete
     [Test]
     public void DeleteResult()
     {
-        var actual = _database.Delete("Id", _resultGuid, "Result");
+        var actual = _database.Delete("Id", _resultGuid, Model.Result);
 
         Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkResponse()));
     }

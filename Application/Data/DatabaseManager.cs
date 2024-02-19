@@ -7,7 +7,7 @@ public static class DatabaseManager
 {
     public static void InitialiseDatabase()
     {
-        var dbResponse = Database.Read("Name", "Default", "Role");
+        var dbResponse = Database.Read("Name", "Default", Model.Role);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
             Database.Create(new Role
             {
@@ -15,7 +15,7 @@ public static class DatabaseManager
                 Name = "Default"
             });
 
-        dbResponse = Database.Read("Name", "Administrator", "Role");
+        dbResponse = Database.Read("Name", "Administrator", Model.Role);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
             Database.Create(new Role
             {

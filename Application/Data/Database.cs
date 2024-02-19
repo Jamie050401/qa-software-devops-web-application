@@ -24,13 +24,13 @@ public class Database
         return this.CreateUpdate(OperationType.Create, value);
     }
 
-    public Response<IModel, Error> Read(string propertyName, object propertyValue, string modelTypeName)
+    public Response<IModel, Error> Read(string propertyName, object propertyValue, Model model)
     {
         var inputs = new Inputs
         {
             PropertyName = propertyName,
             PropertyValue = propertyValue,
-            ModelTypeName = modelTypeName
+            Model = model
         };
 
         return this.ReadDelete(OperationType.Read, inputs);
@@ -41,13 +41,13 @@ public class Database
         return this.CreateUpdate(OperationType.Update, value);
     }
 
-    public Response<IModel, Error> Delete(string propertyName, object propertyValue, string modelTypeName)
+    public Response<IModel, Error> Delete(string propertyName, object propertyValue, Model model)
     {
         var inputs = new Inputs
         {
             PropertyName = propertyName,
             PropertyValue = propertyValue,
-            ModelTypeName = modelTypeName
+            Model = model
         };
 
         return this.ReadDelete(OperationType.Delete, inputs);
@@ -374,18 +374,6 @@ public class Database
         return new ExecuteReaderResponse(dbConnection, dbCommand, dbCommand.ExecuteReader());
     }
 
-    private readonly struct ExecuteReaderResponse(SqliteConnection connection, SqliteCommand command, SqliteDataReader reader)
-    {
-        public SqliteDataReader Reader { get; } = reader;
-        private SqliteConnection Connection { get; } = connection;
-        private SqliteCommand Command { get; } = command;
-
-        public void Dispose()
-        {
-            Reader.Close(); Command.Dispose(); Connection.Close();
-        }
-    }
-
     private void DeleteFromCache(object? key)
     {
         if (key is not null) Cache.Remove(key);
@@ -404,11 +392,24 @@ public class Database
         return value;
     }
 
-    private struct Inputs
+    private readonly struct ExecuteReaderResponse(SqliteConnection connection, SqliteCommand command, SqliteDataReader reader)
+    {
+        public SqliteDataReader Reader { get; } = reader;
+        private SqliteConnection Connection { get; } = connection;
+        private SqliteCommand Command { get; } = command;
+
+        public void Dispose()
+        {
+            Reader.Close(); Command.Dispose(); Connection.Close();
+        }
+    }
+
+    private readonly struct Inputs
     {
         public string PropertyName { get; init; }
         public object PropertyValue { get; init; }
-        public string ModelTypeName { get; init; }
+        public Model Model { get; init; }
+        public string ModelTypeName => this.Model.ToString();
     }
 
     private enum OperationType
