@@ -87,7 +87,7 @@ public class Database
             return Response<IModel, Error>.NotFoundResponse($"{value.Id} does not exist within the database");
 
         // For Create/Update scenarios, id should always be the Guid enforced by the IModel interface
-        this.AddToCache($"{value.Id}", value);
+        this.AddToCache(value);
         return Response<IModel, Error>.OkResponse();
     }
 
@@ -99,7 +99,7 @@ public class Database
 
         if (operationType is OperationType.Read)
         {
-            var valueInCache = (IModel?)this.GetFromCache($"{inputs.PropertyValue}");
+            var valueInCache = this.GetFromCache($"{inputs.PropertyValue}");
             if (valueInCache is not null)
                 return Response<IModel, Error>.OkValueResponse(valueInCache);
         }
@@ -142,7 +142,7 @@ public class Database
             {
                 GetDatabaseValue(valueInDb, property);
             }
-            this.AddToCache($"{valueInDb.Id}", valueInDb);
+            this.AddToCache(valueInDb);
             return Response<IModel, Error>.OkValueResponse(valueInDb);
         }
 
@@ -165,7 +165,7 @@ public class Database
             return Response<IModel, Error>.NotFoundResponse($"{inputs.PropertyValue} does not exist within the database");
 
         Debug.Assert(dbResponse.Value != null, "dbResponse.Value != null");
-        this.DeleteFromCache(dbResponse.Value.Id);
+        this.DeleteFromCache(dbResponse.Value);
         return Response<IModel, Error>.OkResponse();
     }
 
@@ -378,22 +378,45 @@ public class Database
         return new ExecuteReaderResponse(dbConnection, dbCommand, dbCommand.ExecuteReader());
     }
 
-    private void DeleteFromCache(object? key)
+    private void EditCache(CacheBehaviour behaviour, IModel model)
     {
-        if (key is not null) Cache.Remove(key);
+        var modelType = model.GetType();
+        var prefix = modelType.Name;
+
+        var modelProperties = modelType.GetProperties();
+        foreach (var property in modelProperties)
+        {
+            var key = $"{prefix}-{property.Name}";
+            switch (behaviour)
+            {
+                case CacheBehaviour.Add:
+                    Cache.Set(key, model, CacheEntryOptions);
+                    break;
+                case CacheBehaviour.Remove:
+                    Cache.Remove(key);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(behaviour), behaviour, null);
+            }
+        }
     }
 
-    private void AddToCache(object key, object value)
+    private void DeleteFromCache(IModel model)
     {
-        Cache.Set(key, value, CacheEntryOptions);
+        this.EditCache(CacheBehaviour.Remove, model);
     }
 
-    private object? GetFromCache(object? key)
+    private void AddToCache(IModel model)
+    {
+        this.EditCache(CacheBehaviour.Add, model);
+    }
+
+    private IModel? GetFromCache(object? key)
     {
         if (key is null) return null;
 
         Cache.TryGetValue(key, out var value);
-        return value;
+        return (IModel?)value;
     }
 
     private readonly struct ExecuteReaderResponse(SqliteConnection connection, SqliteCommand command, SqliteDataReader reader)
@@ -420,6 +443,12 @@ public class Database
         Read,
         Update,
         Delete
+    }
+
+    private enum CacheBehaviour
+    {
+        Add,
+        Remove
     }
 
     private string? ConnectionString { get; }

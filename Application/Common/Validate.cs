@@ -25,6 +25,7 @@ public static partial class Validate
         }
 
         isValid = password.Length > 11;
+        // ReSharper disable once InvertIf
         if (!isValid)
         {
             notyf.Error("Password must be at least 12 characters long.");
