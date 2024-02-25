@@ -90,7 +90,7 @@ public static class Session
     }
 
     // TODO - Implement logic to regenerate the token everytime it is used?
-    // TODO - Implement support for users to have multiple valid tokens (i.e. for different locations or devices)
+    // TODO - Implement support for multiple cookies per user (i.e. 1 per device)
     public static void Login(ILogger logger, ISession session, HttpRequest request, HttpResponse response)
     {
         var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, Cookies.AuthenticationData);
@@ -101,6 +101,7 @@ public static class Session
         }
         Debug.Assert(cookieResponse.Value != null, "cookieResponse.Value != null");
         var authenticationData = cookieResponse.Value;
+
         var dbResponse = DatabaseManager.Database.Read(User.GetProperty("Email"), authenticationData.Email);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
@@ -110,6 +111,7 @@ public static class Session
         }
         Debug.Assert(dbResponse.Value != null, "databaseResponse.Value != null");
         var userInDb = (User)dbResponse.Value;
+
         var isAuthenticated = userInDb.AuthenticationData is not null &&
                               Secret.Verify(authenticationData.Token, userInDb.AuthenticationData.Token) &&
                               authenticationData.Source == userInDb.AuthenticationData.Source &&

@@ -16,6 +16,7 @@ public static class Cookie
     {
         Expires = DateTimeOffset.UtcNow.AddDays(7),
         HttpOnly = true,
+        IsEssential = false,
         SameSite = SameSiteMode.Strict,
         Secure = false // Ideally this would be true (need to setup HTTPS support)
     };

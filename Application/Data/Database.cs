@@ -300,7 +300,6 @@ public class Database
         {
             var type = model.GetType();
             var properties = type.GetProperties();
-
             var tableName = $"{type.Name}s";
 
             var columns = "";

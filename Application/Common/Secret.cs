@@ -1,7 +1,8 @@
 ﻿namespace Application.Common;
 
-// Source: https://stackoverflow.com/questions/2138429/hash-and-salt-passwords-in-c-sharp/73126492#73126492
-// Source: https://stackoverflow.com/questions/10168240/encrypting-decrypting-a-string-in-c-sharp
+// Sources:
+//   https://stackoverflow.com/questions/2138429/hash-and-salt-passwords-in-c-sharp/73126492#73126492
+//   https://stackoverflow.com/questions/10168240/encrypting-decrypting-a-string-in-c-sharp
 
 using Microsoft.AspNetCore.Identity;
 using System;
