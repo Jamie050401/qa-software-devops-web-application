@@ -10,8 +10,8 @@ public static class Session
     public struct Variables
     {
         public const string HasLoggedIn = "HasLoggedIn";
-        public const string IsLogin = "IsLogin";
         public const string IsLoggedIn = "IsLoggedIn";
+        public const string IsLogin = "IsLogin";
         public const string IsLogout = "IsLogout";
     }
 
