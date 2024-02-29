@@ -1,8 +1,8 @@
 ﻿namespace Application.Tests;
 
 using Common;
-using Microsoft.AspNetCore.Identity;
 using NUnit.Framework;
+using System.Diagnostics;
 
 [TestFixture]
 public class ValidateEmail
@@ -68,19 +68,10 @@ public class ValidatePassword
     [Test]
     public void LongPasswordDenied()
     {
-        var passwordOptions = new PasswordOptions
-        {
-            RequiredLength = 60,
-            RequiredUniqueChars = 8,
-            RequireDigit = true,
-            RequireLowercase = true,
-            RequireNonAlphanumeric = true,
-            RequireUppercase = true
-        };
-
         // ReSharper disable once StringLiteralTypo
-        var password = Secret.Generate(passwordOptions);
+        var password = Enumerable.Range(0, 60).Select(_ => 'a').ToString();
 
+        Debug.Assert(password != null, nameof(password) + " != null");
         var actual = Validate.Password(null, password, password);
 
         Assert.That(actual, Is.EqualTo(false));
