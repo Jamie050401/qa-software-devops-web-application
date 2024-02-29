@@ -10,10 +10,8 @@ using System.Reflection;
 
 public class Database
 {
-    public Database(string? path = null, string? name = null)
+    public Database(string path = "Data", string name = "database")
     {
-        path ??= "Data";
-        name ??= "database";
         Directory.CreateDirectory(path);
         ConnectionString = $"Data Source={path}/{name}.sqlite";
         this.CreateTables();
@@ -24,13 +22,15 @@ public class Database
         return this.CreateUpdate(OperationType.Create, value);
     }
 
-    public Response<IModel, Error> Read(string propertyName, object propertyValue, string modelTypeName)
+    public Response<IModel, Error> Read(PropertyInfo? property, object propertyValue)
     {
+        if (property is null)
+            return Response<IModel, Error>.BadRequestResponse($"{nameof(property)} cannot be null");
+
         var inputs = new Inputs
         {
-            PropertyName = propertyName,
-            PropertyValue = propertyValue,
-            ModelTypeName = modelTypeName
+            Property = property,
+            PropertyValue = propertyValue
         };
 
         return this.ReadDelete(OperationType.Read, inputs);
@@ -41,13 +41,15 @@ public class Database
         return this.CreateUpdate(OperationType.Update, value);
     }
 
-    public Response<IModel, Error> Delete(string propertyName, object propertyValue, string modelTypeName)
+    public Response<IModel, Error> Delete(PropertyInfo? property, object propertyValue)
     {
+        if (property is null)
+            return Response<IModel, Error>.BadRequestResponse($"{nameof(property)} cannot be null");
+
         var inputs = new Inputs
         {
-            PropertyName = propertyName,
-            PropertyValue = propertyValue,
-            ModelTypeName = modelTypeName
+            Property = property,
+            PropertyValue = propertyValue
         };
 
         return this.ReadDelete(OperationType.Delete, inputs);
@@ -82,8 +84,7 @@ public class Database
         if (createUpdateAffected <= 0)
             return Response<IModel, Error>.NotFoundResponse($"{value.Id} does not exist within the database");
 
-        // For Create/Update scenarios, id should always be the Guid enforced by the IModel interface
-        this.AddToCache($"{value.Id}", value);
+        this.AddToCache(value);
         return Response<IModel, Error>.OkResponse();
     }
 
@@ -95,7 +96,7 @@ public class Database
 
         if (operationType is OperationType.Read)
         {
-            var valueInCache = (IModel?)this.GetFromCache($"{inputs.PropertyValue}");
+            var valueInCache = this.GetFromCache($"{inputs.PropertyValue}");
             if (valueInCache is not null)
                 return Response<IModel, Error>.OkValueResponse(valueInCache);
         }
@@ -138,11 +139,11 @@ public class Database
             {
                 GetDatabaseValue(valueInDb, property);
             }
-            this.AddToCache($"{valueInDb.Id}", valueInDb);
+            this.AddToCache(valueInDb);
             return Response<IModel, Error>.OkValueResponse(valueInDb);
         }
 
-        // Recursive call to ensure I have the Guid to remove the item from the cache
+        // Recursive call to ensure I have the full value to remove the item from the cache
         var dbResponse = this.ReadDelete(OperationType.Read, inputs);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
             return Response<IModel, Error>.BadRequestResponse($"{inputs.PropertyValue} does not exist within the database");
@@ -161,7 +162,7 @@ public class Database
             return Response<IModel, Error>.NotFoundResponse($"{inputs.PropertyValue} does not exist within the database");
 
         Debug.Assert(dbResponse.Value != null, "dbResponse.Value != null");
-        this.DeleteFromCache(dbResponse.Value.Id);
+        this.DeleteFromCache(dbResponse.Value);
         return Response<IModel, Error>.OkResponse();
     }
 
@@ -170,8 +171,8 @@ public class Database
         try
         {
             if (value is null && inputs is not null)
-                return Type.GetType($"Application.Models.{inputs.Value.ModelTypeName}")
-                    ?? throw new Exception($"Failed to find type for {inputs.Value.ModelTypeName}");
+                return inputs.Value.Property.ReflectedType
+                       ?? throw new Exception($"Failed to find type for {inputs.Value.Property.ReflectedType}");
 
             return value?.GetType();
         }
@@ -192,7 +193,7 @@ public class Database
     private static string GetReadSql(Inputs inputs, string tableName)
     {
         var conditionValue = GetConditionValue(inputs);
-        return $"SELECT * FROM {tableName} WHERE {inputs.PropertyName} = {conditionValue};";
+        return $"SELECT * FROM {tableName} WHERE {inputs.Property.Name} = {conditionValue};";
     }
 
     private static string GetUpdateSql(IModel value, IEnumerable<PropertyInfo> properties, string tableName)
@@ -204,7 +205,7 @@ public class Database
     private static string GetDeleteSql(Inputs inputs, string tableName)
     {
         var conditionValue = GetConditionValue(inputs);
-        return $"DELETE FROM {tableName} WHERE {inputs.PropertyName} = {conditionValue}";
+        return $"DELETE FROM {tableName} WHERE {inputs.Property.Name} = {conditionValue}";
     }
 
     private static object GetConditionValue(Inputs inputs)
@@ -296,7 +297,6 @@ public class Database
         {
             var type = model.GetType();
             var properties = type.GetProperties();
-
             var tableName = $"{type.Name}s";
 
             var columns = "";
@@ -374,6 +374,47 @@ public class Database
         return new ExecuteReaderResponse(dbConnection, dbCommand, dbCommand.ExecuteReader());
     }
 
+    private void EditCache(CacheBehaviour behaviour, IModel model)
+    {
+        var modelType = model.GetType();
+        var prefix = modelType.Name;
+
+        var modelProperties = modelType.GetProperties();
+        foreach (var property in modelProperties)
+        {
+            var key = $"{prefix}-{property.Name}";
+            switch (behaviour)
+            {
+                case CacheBehaviour.Add:
+                    Cache.Set(key, model, CacheEntryOptions);
+                    break;
+                case CacheBehaviour.Remove:
+                    Cache.Remove(key);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(behaviour), behaviour, null);
+            }
+        }
+    }
+
+    private void DeleteFromCache(IModel model)
+    {
+        this.EditCache(CacheBehaviour.Remove, model);
+    }
+
+    private void AddToCache(IModel model)
+    {
+        this.EditCache(CacheBehaviour.Add, model);
+    }
+
+    private IModel? GetFromCache(object? key)
+    {
+        if (key is null) return null;
+
+        Cache.TryGetValue(key, out var value);
+        return (IModel?)value;
+    }
+
     private readonly struct ExecuteReaderResponse(SqliteConnection connection, SqliteCommand command, SqliteDataReader reader)
     {
         public SqliteDataReader Reader { get; } = reader;
@@ -386,29 +427,10 @@ public class Database
         }
     }
 
-    private void DeleteFromCache(object? key)
+    private readonly struct Inputs
     {
-        if (key is not null) Cache.Remove(key);
-    }
-
-    private void AddToCache(object key, object value)
-    {
-        Cache.Set(key, value, CacheEntryOptions);
-    }
-
-    private object? GetFromCache(object? key)
-    {
-        if (key is null) return null;
-
-        Cache.TryGetValue(key, out var value);
-        return value;
-    }
-
-    private struct Inputs
-    {
-        public string PropertyName { get; init; }
+        public PropertyInfo Property { get; init; }
         public object PropertyValue { get; init; }
-        public string ModelTypeName { get; init; }
     }
 
     private enum OperationType
@@ -417,6 +439,12 @@ public class Database
         Read,
         Update,
         Delete
+    }
+
+    private enum CacheBehaviour
+    {
+        Add,
+        Remove
     }
 
     private string? ConnectionString { get; }

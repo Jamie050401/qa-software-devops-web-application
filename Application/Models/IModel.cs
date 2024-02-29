@@ -1,5 +1,22 @@
 ﻿namespace Application.Models;
 
+using System.Reflection;
+
+public interface IModel
+{
+    public Guid Id { get; }
+}
+
+public abstract class ModelBase<T> : IModel where T : ModelBase<T>
+{
+    public abstract Guid Id { get; init; }
+
+    public static PropertyInfo? GetProperty(string propertyName)
+    {
+        return typeof(T).GetProperty(propertyName);
+    }
+}
+
 [AttributeUsage(AttributeTargets.Property)]
 public class PrimaryKeyAttribute : Attribute;
 
@@ -25,8 +42,3 @@ public class UniqueAttribute : Attribute;
 
 [AttributeUsage(AttributeTargets.Property)]
 public class NonNullableAttribute : Attribute;
-
-public interface IModel
-{
-    public Guid Id { get; }
-}

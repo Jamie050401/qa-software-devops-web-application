@@ -10,8 +10,8 @@ public static class Session
     public struct Variables
     {
         public const string HasLoggedIn = "HasLoggedIn";
-        public const string IsFirstDashboardVisit = "IsFirstDashboardVisit";
         public const string IsLoggedIn = "IsLoggedIn";
+        public const string IsLogin = "IsLogin";
         public const string IsLogout = "IsLogout";
     }
 
@@ -90,7 +90,7 @@ public static class Session
     }
 
     // TODO - Implement logic to regenerate the token everytime it is used?
-    // TODO - Implement support for users to have multiple valid tokens (i.e. for different locations or devices)
+    // TODO - Implement support for multiple cookies per user (i.e. 1 per device)
     public static void Login(ILogger logger, ISession session, HttpRequest request, HttpResponse response)
     {
         var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, Cookies.AuthenticationData);
@@ -101,7 +101,8 @@ public static class Session
         }
         Debug.Assert(cookieResponse.Value != null, "cookieResponse.Value != null");
         var authenticationData = cookieResponse.Value;
-        var dbResponse = DatabaseManager.Database.Read("Email", authenticationData.Email, "User");
+
+        var dbResponse = DatabaseManager.Database.Read(User.GetProperty("Email"), authenticationData.Email);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
             logger.Information("Login failure: unable to find user matching authentication data stored in cookies");
@@ -110,6 +111,7 @@ public static class Session
         }
         Debug.Assert(dbResponse.Value != null, "databaseResponse.Value != null");
         var userInDb = (User)dbResponse.Value;
+
         var isAuthenticated = userInDb.AuthenticationData is not null &&
                               Secret.Verify(authenticationData.Token, userInDb.AuthenticationData.Token) &&
                               authenticationData.Source == userInDb.AuthenticationData.Source &&
@@ -125,7 +127,7 @@ public static class Session
 
         SetBoolean(session, Variables.IsLoggedIn, true);
         SetBoolean(session, Variables.HasLoggedIn, true);
-        SetBoolean(session, Variables.IsFirstDashboardVisit, true);
+        SetBoolean(session, Variables.IsLogin, true);
         response.Redirect("/dashboard", true);
     }
 
@@ -158,7 +160,7 @@ public static class Session
         SetBoolean(session, Variables.IsLoggedIn, true);
         SetBoolean(session, Variables.HasLoggedIn, true);
         Cookie.Store(response, Cookies.HasLoggedIn, true, DateTimeOffset.UtcNow.AddDays(90), true);
-        SetBoolean(session, Variables.IsFirstDashboardVisit, true);
+        SetBoolean(session, Variables.IsLogin, true);
         response.Redirect("/dashboard", true);
     }
 

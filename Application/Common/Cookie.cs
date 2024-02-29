@@ -16,6 +16,7 @@ public static class Cookie
     {
         Expires = DateTimeOffset.UtcNow.AddDays(7),
         HttpOnly = true,
+        IsEssential = false,
         SameSite = SameSiteMode.Strict,
         Secure = false // Ideally this would be true (need to setup HTTPS support)
     };
@@ -35,12 +36,12 @@ public static class Cookie
     {
         var cookie = request.Cookies[key];
 
-        if (cookie is null) return Response<TValue, Error>.NotFoundResponse();
+        if (cookie is null) return Response<TValue, Error>.NotFoundResponse($"Unable to find cookie for {key}");
 
         var decrypted = Secret.Decrypt(cookie, PassPhrase);
         var data = JsonConvert.DeserializeObject<TValue>(decrypted);
         return data is null
-            ? Response<TValue, Error>.NotFoundResponse()
+            ? Response<TValue, Error>.ServerErrorResponse($"Unable to deserialise cookie for {key}")
             : Response<TValue, Error>.OkValueResponse(data);
     }
 
