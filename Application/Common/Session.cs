@@ -10,7 +10,7 @@ public static class Session
     public struct Variables
     {
         public const string HasLoggedIn = "HasLoggedIn";
-        public const string IsFirstDashboardVisit = "IsFirstDashboardVisit";
+        public const string IsLogin = "IsLogin";
         public const string IsLoggedIn = "IsLoggedIn";
         public const string IsLogout = "IsLogout";
     }
@@ -127,7 +127,7 @@ public static class Session
 
         SetBoolean(session, Variables.IsLoggedIn, true);
         SetBoolean(session, Variables.HasLoggedIn, true);
-        SetBoolean(session, Variables.IsFirstDashboardVisit, true);
+        SetBoolean(session, Variables.IsLogin, true);
         response.Redirect("/dashboard", true);
     }
 
@@ -160,7 +160,7 @@ public static class Session
         SetBoolean(session, Variables.IsLoggedIn, true);
         SetBoolean(session, Variables.HasLoggedIn, true);
         Cookie.Store(response, Cookies.HasLoggedIn, true, DateTimeOffset.UtcNow.AddDays(90), true);
-        SetBoolean(session, Variables.IsFirstDashboardVisit, true);
+        SetBoolean(session, Variables.IsLogin, true);
         response.Redirect("/dashboard", true);
     }
 

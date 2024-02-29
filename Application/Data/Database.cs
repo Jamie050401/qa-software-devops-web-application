@@ -10,10 +10,8 @@ using System.Reflection;
 
 public class Database
 {
-    public Database(string? path = null, string? name = null)
+    public Database(string path = "Data", string name = "database")
     {
-        path ??= "Data";
-        name ??= "database";
         Directory.CreateDirectory(path);
         ConnectionString = $"Data Source={path}/{name}.sqlite";
         this.CreateTables();
@@ -86,7 +84,6 @@ public class Database
         if (createUpdateAffected <= 0)
             return Response<IModel, Error>.NotFoundResponse($"{value.Id} does not exist within the database");
 
-        // For Create/Update scenarios, id should always be the Guid enforced by the IModel interface
         this.AddToCache(value);
         return Response<IModel, Error>.OkResponse();
     }
@@ -146,7 +143,7 @@ public class Database
             return Response<IModel, Error>.OkValueResponse(valueInDb);
         }
 
-        // Recursive call to ensure I have the Guid to remove the item from the cache
+        // Recursive call to ensure I have the full value to remove the item from the cache
         var dbResponse = this.ReadDelete(OperationType.Read, inputs);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
             return Response<IModel, Error>.BadRequestResponse($"{inputs.PropertyValue} does not exist within the database");
