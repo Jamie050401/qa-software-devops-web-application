@@ -1,0 +1,77 @@
+﻿@page "/projection"
+@model Application.Pages.Projection
+
+@{
+    ViewData["Title"] = "Projection";
+}
+
+<div class="container-fluid col-xxl-8 px-4 py-5">
+    <div class="row flex-lg-row-reverse align-items-left g-0 py-0 rounded-3 border shadow-lg">
+        <form class="p-4 p-md-5" method="POST">
+            <section>
+                <h2>Personal Details</h2>
+                <div class="form-floating mb-3">
+                    <select class="dropdown-menu position-static d-grid gap-1 p-2 rounded-3 mx-0 shadow" data-bs-theme="light" id="title" name="title">
+                        <option class="dropdown-item rounded-2" value="" disabled selected>Title</option>
+                        <option class="dropdown-item rounded-2" value="Mr">Mr</option>
+                        <option class="dropdown-item rounded-2" value="Mrs">Mrs</option>
+                        <option class="dropdown-item rounded-2" value="Miss">Miss</option>
+                        <option class="dropdown-item rounded-2" value="Ms">Ms</option>
+                        <option class="dropdown-item rounded-2" value="Dr">Dr</option>
+                    </select>
+                </div>
+                <div class="form-floating mb-3">
+                    @if (string.IsNullOrEmpty(Model.CurrentUser?.FirstName))
+                    {
+                        <input type="text" class="form-control" id="first_name" name="first_name" placeholder="">
+                    }
+                    else
+                    {
+                        <input type="text" class="form-control" id="first_name" name="first_name" value="@Model.CurrentUser?.FirstName">
+                    }
+                    <label>First Name</label>
+                </div>
+                <div class="form-floating mb-3">
+                    @if (string.IsNullOrEmpty(Model.CurrentUser?.LastName))
+                    {
+                        <input type="text" class="form-control" id="last_name" name="last_name" placeholder="">
+                    }
+                    else
+                    {
+                        <input type="text" class="form-control" id="last_name" name="last_name" value="@Model.CurrentUser?.LastName">
+                    }
+                    <label>Last Name</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" placeholder="">
+                    <label>Date of Birth</label>
+                </div>
+            </section>
+            <section>
+                <h2>Financial Details</h2>
+                <div class="form-floating mb-3">
+                    <input type="number" min="1000" step="100" class="form-control" id="total_investment" name="total_investment" placeholder="0.00">
+                    <label>Investment (£)</label>
+                </div>
+            </section>
+            <section>
+                <h3>Fund Choices</h3>
+                <div class="form-floating mb-3">
+                    <!-- TODO
+                    1. Make button appear beside 'Fund Name' field
+                    2. The 'Add Fund' button should update SelectedFunds and then return to this form with all the existing data populated
+                    3. Once at least one element exists in SelectedFunds, they should be displayed in a table with the option to specify investment percentage
+                    -->
+                    <input type="text" class="form-control" id="fund_name" name="fund_name" placeholder="">
+                    <label>Fund Name</label>
+                    <button class="w-10 btn btn-sm btn-primary" asp-page-handler="Fund" type="submit">Add Fund</button>
+
+                    <!--<select class="dropdown-menu position-static d-grid gap-1 p-2 rounded-3 mx-0 shadow" data-bs-theme="light" id="selected_funds" name="selected_funds" asp-items="Model.Funds"></select>-->
+                </div>
+            </section>
+            <div class="form-floating px-3 py-3">
+                <button class="w-100 btn btn-lg btn-primary" type="submit">Get Projection</button>
+            </div>
+        </form>
+    </div>
+</div>

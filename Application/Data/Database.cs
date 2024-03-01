@@ -36,6 +36,43 @@ public class Database
         return this.ReadDelete(OperationType.Read, inputs);
     }
 
+    // TODO - Needs unit tests
+    public Response<List<IModel>, Error> ReadAll<T>()
+    {
+        var modelType = typeof(T);
+
+        if (!modelType.GetInterfaces().Contains(typeof(IModel)))
+            return Response<List<IModel>, Error>.BadRequestResponse($"{nameof(modelType)} must be a model that implements IModel");
+
+        var tableName = $"{modelType.Name}s";
+        var properties = modelType.GetProperties();
+
+        var sql = $"SELECT * FROM {tableName}";
+        var rows = new List<IModel>();
+        var readerResponse = this.ExecuteReader(sql);
+        while (readerResponse.Reader.Read())
+        {
+            var propertyValues = new object[properties.Length];
+            readerResponse.Reader.GetValues(propertyValues);
+
+            var valueInDb = (IModel?)Activator.CreateInstance("Application", $"Application.Models.{modelType.Name}")?.Unwrap();
+            if (valueInDb is null)
+                return Response<List<IModel>, Error>.BadRequestResponse($"Unable to instantiate Application.Models.{modelType.Name}");
+
+            foreach (var property in properties.Zip(propertyValues, Tuple.Create))
+            {
+                GetDatabaseValue(valueInDb, property);
+            }
+
+            rows.Add(valueInDb);
+        }
+        readerResponse.Dispose();
+
+        return rows.Count == 0
+            ? Response<List<IModel>, Error>.NotFoundResponse($"No data found in table {tableName}")
+            : Response<List<IModel>, Error>.OkValueResponse(rows);
+    }
+
     public Response<IModel, Error> Update(IModel value)
     {
         return this.CreateUpdate(OperationType.Update, value);

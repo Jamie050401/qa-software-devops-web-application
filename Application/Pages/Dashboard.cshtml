@@ -6,7 +6,7 @@
 }
 
 <!--suppress CommaExpressionJS, BadExpressionStatementJS -->
-<div class="container col-xxl-8 px-4 py-5">
+<div class="container-fluid col-xxl-8 px-4 py-5">
     <div class="row flex-lg-row-reverse align-items-center g-5 py-5 rounded-3 border shadow-lg">
         <div class="col-10 col-sm-8 col-lg-6">
             <div class="tradingview-widget-container">
@@ -29,7 +29,7 @@
         </div>
         <div class="col-lg-6">
             <div class="text-center">
-                @if (Model.CurrentUser?.FirstName is null)
+                @if (string.IsNullOrEmpty(Model.CurrentUser?.FirstName))
                 {
                     <h1 class="display-5 fw-bold text-body-emphasis lh-1 mb-3">Welcome!</h1>
                 }

@@ -10,11 +10,11 @@ public static class Session
 {
     public struct Variables
     {
+        public const string CurrentUser = "CurrentUser";
         public const string HasLoggedIn = "HasLoggedIn";
         public const string IsLoggedIn = "IsLoggedIn";
         public const string IsLogin = "IsLogin";
         public const string IsLogout = "IsLogout";
-        public const string CurrentUser = "CurrentUser";
     }
 
     public static bool HasValue(ISession session, string key)

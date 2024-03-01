@@ -23,7 +23,7 @@ public class DashboardModel(INotyfService notyf) : PageModel
 
     public void OnPostProjection()
     {
-        // ...
+        Response.Redirect("/projection");
     }
 
     public void OnPostResults()
