@@ -4,7 +4,6 @@ using Common;
 using Data;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Models;
-using Newtonsoft.Json;
 using PageModel = Shared.PageModel;
 
 public class Projection : PageModel
@@ -19,22 +18,32 @@ public class Projection : PageModel
             var fund = (Fund)model;
             return new SelectListItem
             {
-                Value = JsonConvert.SerializeObject(fund),
+                Value = fund.Id.ToString(),
                 Text = fund.Name
             };
         }).ToList() ?? [];
+        SelectedFunds = [];
+    }
+
+    public void OnGetFunds()
+    {
+        // This should be called to return to the form after OnPostFunds
+        // ...
     }
 
     public void OnPost()
     {
+        // This should be called to submit the projection form
         // ...
     }
 
     public void OnPostFunds()
     {
+        // This should be called to add a new fund to SelectedFunds
         // ...
     }
 
     public User? CurrentUser { get; private set; }
     public List<SelectListItem>? Funds { get; private set; }
+    public List<Fund>? SelectedFunds { get; private set; }
 }
