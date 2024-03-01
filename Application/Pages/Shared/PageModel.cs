@@ -7,11 +7,6 @@ public class PageModel : Microsoft.AspNetCore.Mvc.RazorPages.PageModel
         Response.Redirect("/dashboard");
     }
 
-    public void OnPostPrivacy()
-    {
-        Response.Redirect("/privacy");
-    }
-
     public void OnPostLogout()
     {
         Response.Redirect("/logout");

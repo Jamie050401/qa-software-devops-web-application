@@ -27,12 +27,6 @@
                                 <form method="POST"><button class="btn" asp-page-handler="Dashboard" type="submit">Dashboard</button></form>
                             </li>
                         }
-                        @if (!ReferenceEquals(ViewData["Title"], "Privacy"))
-                        {
-                            <li class="nav-item">
-                                <form method="POST"><button class="btn" asp-page-handler="Privacy" type="submit">Privacy</button></form>
-                            </li>
-                        }
                         <li class="nav-item">
                             <form method="POST"><button class="btn" asp-page-handler="Logout" type="submit">Logout</button></form>
                         </li>
