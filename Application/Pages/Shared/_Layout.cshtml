@@ -24,13 +24,13 @@
                         @if (!ReferenceEquals(ViewData["Title"], "Dashboard"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-page="/dashboard">Dashboard</a>
+                                <form method="POST"><button class="btn" asp-page-handler="Dashboard" type="submit">Dashboard</button></form>
                             </li>
                         }
                         @if (!ReferenceEquals(ViewData["Title"], "Privacy"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-page="/privacy">Privacy</a>
+                                <form method="POST"><button class="btn" asp-page-handler="Privacy" type="submit">Privacy</button></form>
                             </li>
                         }
                         <li class="nav-item">
