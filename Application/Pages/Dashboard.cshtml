@@ -6,8 +6,12 @@
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <form asp-page-handler="Logout" method="POST">
-        <button class="btn btn-default">Logout</button>
-    </form>
+    @if (Model.CurrentUser?.FirstName is null)
+    {
+        <h1 class="display-4">Welcome!</h1>
+    }
+    else
+    {
+        <h1 class="display-4">Welcome @Model.CurrentUser.FirstName!</h1>
+    }
 </div>
