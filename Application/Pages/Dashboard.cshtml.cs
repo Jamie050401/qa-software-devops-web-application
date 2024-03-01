@@ -21,5 +21,15 @@ public class DashboardModel(INotyfService notyf) : PageModel
         CurrentUser = Session.GetObject<User>(HttpContext.Session, Session.Variables.CurrentUser);
     }
 
+    public void OnPostProjection()
+    {
+        // ...
+    }
+
+    public void OnPostResults()
+    {
+        // ...
+    }
+
     public User? CurrentUser { get; private set; }
 }
