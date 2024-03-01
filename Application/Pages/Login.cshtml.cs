@@ -4,8 +4,8 @@ using AspNetCoreHero.ToastNotification.Abstractions;
 using Common;
 using Data;
 using ILogger = Serilog.ILogger;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Models;
+using PageModel = Shared.PageModel;
 using System.Diagnostics;
 
 public class LoginModel(ILogger logger, INotyfService notyf) : PageModel

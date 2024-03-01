@@ -1,7 +1,7 @@
 ﻿namespace Application.Pages;
 
 using Common;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using PageModel = Shared.PageModel;
 
 public class PrivacyModel : PageModel
 {

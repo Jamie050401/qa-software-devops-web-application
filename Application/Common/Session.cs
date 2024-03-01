@@ -3,6 +3,7 @@
 using Data;
 using ILogger = Serilog.ILogger;
 using Models;
+using Newtonsoft.Json;
 using System.Diagnostics;
 
 public static class Session
@@ -13,6 +14,7 @@ public static class Session
         public const string IsLoggedIn = "IsLoggedIn";
         public const string IsLogin = "IsLogin";
         public const string IsLogout = "IsLogout";
+        public const string CurrentUser = "CurrentUser";
     }
 
     public static bool HasValue(ISession session, string key)
@@ -28,6 +30,33 @@ public static class Session
     public static void SetBoolean(ISession session, string key, bool value)
     {
         session.Set(key, BitConverter.GetBytes(value));
+    }
+
+    public static string GetString(ISession session, string key)
+    {
+        return session.GetString(key) ?? "";
+    }
+
+    public static void SetString(ISession session, string key, string value)
+    {
+        session.SetString(key, value);
+    }
+
+    public static void DeleteObject(ISession session, string key)
+    {
+        session.Remove(key);
+    }
+
+    public static T? GetObject<T>(ISession session, string key)
+    {
+        var json = GetString(session, key);
+        return JsonConvert.DeserializeObject<T>(json);
+    }
+
+    public static void SetObject(ISession session, string key, object value)
+    {
+        var json = JsonConvert.SerializeObject(value);
+        SetString(session, key, json);
     }
 
     public static bool Authenticate(ISession session, HttpRequest request, HttpResponse response)
@@ -128,6 +157,7 @@ public static class Session
         SetBoolean(session, Variables.IsLoggedIn, true);
         SetBoolean(session, Variables.HasLoggedIn, true);
         SetBoolean(session, Variables.IsLogin, true);
+        SetObject(session, Variables.CurrentUser, userInDb);
         response.Redirect("/dashboard", true);
     }
 
@@ -161,6 +191,7 @@ public static class Session
         SetBoolean(session, Variables.HasLoggedIn, true);
         Cookie.Store(response, Cookies.HasLoggedIn, true, DateTimeOffset.UtcNow.AddDays(90), true);
         SetBoolean(session, Variables.IsLogin, true);
+        SetObject(session, Variables.CurrentUser, userInDb);
         response.Redirect("/dashboard", true);
     }
 
@@ -170,6 +201,7 @@ public static class Session
 
         SetBoolean(session, Variables.IsLogout, true);
         SetBoolean(session, Variables.IsLoggedIn, false);
+        DeleteObject(session, Variables.CurrentUser);
         response.Redirect("/login", true);
     }
 }

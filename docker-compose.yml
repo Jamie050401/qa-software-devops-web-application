@@ -9,3 +9,5 @@ services:
       - 5000:5000/tcp
     environment:
       - QAWA-Cookie-Secret=${QAWA-Cookie-Secret}
+    volumes:
+      - /docker/app/data/database.sqlite:/app/Data/database.sqlite

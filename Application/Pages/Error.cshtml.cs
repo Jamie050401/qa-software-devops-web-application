@@ -1,7 +1,7 @@
 namespace Application.Pages;
 
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using PageModel = Shared.PageModel;
 using System.Diagnostics;
 
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

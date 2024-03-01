@@ -2,7 +2,8 @@ namespace Application.Pages;
 
 using AspNetCoreHero.ToastNotification.Abstractions;
 using Common;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using Models;
+using PageModel = Shared.PageModel;
 
 public class DashboardModel(INotyfService notyf) : PageModel
 {
@@ -16,10 +17,19 @@ public class DashboardModel(INotyfService notyf) : PageModel
             notyf.Success("Logged in successfully.");
             Session.SetBoolean(HttpContext.Session, Session.Variables.IsLogin, false);
         }
+
+        CurrentUser = Session.GetObject<User>(HttpContext.Session, Session.Variables.CurrentUser);
     }
 
-    public void OnPostLogout()
+    public void OnPostProjection()
     {
-        Session.Logout(HttpContext.Session, Response);
+        // ...
     }
+
+    public void OnPostResults()
+    {
+        // ...
+    }
+
+    public User? CurrentUser { get; private set; }
 }
