@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Models;
 using PageModel = Shared.PageModel;
 
+// TODO - Look into model binding with ASP.NET Razor Pages
 public class Projection : PageModel
 {
     public void OnGet()
@@ -25,12 +26,6 @@ public class Projection : PageModel
         SelectedFunds = [];
     }
 
-    public void OnGetFunds()
-    {
-        // This should be called to return to the form after OnPostFunds
-        // ...
-    }
-
     public void OnPost()
     {
         // This should be called to submit the projection form
@@ -45,5 +40,5 @@ public class Projection : PageModel
 
     public User? CurrentUser { get; private set; }
     public List<SelectListItem>? Funds { get; private set; }
-    public List<Fund>? SelectedFunds { get; private set; }
+    public List<SelectListItem>? SelectedFunds { get; private set; }
 }
