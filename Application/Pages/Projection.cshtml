@@ -21,24 +21,24 @@
                     </select>
                 </div>
                 <div class="form-floating mb-3">
-                    @if (string.IsNullOrEmpty(Model.CurrentUser?.FirstName))
+                    @if (string.IsNullOrEmpty(Model.CurrentUser.FirstName))
                     {
                         <input type="text" class="form-control" id="first_name" name="first_name" placeholder="">
                     }
                     else
                     {
-                        <input type="text" class="form-control" id="first_name" name="first_name" value="@Model.CurrentUser?.FirstName">
+                        <input type="text" class="form-control" id="first_name" name="first_name" value="@Model.CurrentUser.FirstName">
                     }
                     <label>First Name</label>
                 </div>
                 <div class="form-floating mb-3">
-                    @if (string.IsNullOrEmpty(Model.CurrentUser?.LastName))
+                    @if (string.IsNullOrEmpty(Model.CurrentUser.LastName))
                     {
                         <input type="text" class="form-control" id="last_name" name="last_name" placeholder="">
                     }
                     else
                     {
-                        <input type="text" class="form-control" id="last_name" name="last_name" value="@Model.CurrentUser?.LastName">
+                        <input type="text" class="form-control" id="last_name" name="last_name" value="@Model.CurrentUser.LastName">
                     }
                     <label>Last Name</label>
                 </div>
@@ -62,11 +62,8 @@
                     2. The 'Add Fund' button should update SelectedFunds and then return to this form with all the existing data populated
                     3. Once at least one element exists in SelectedFunds, they should be displayed in a table with the option to specify investment percentage
                     -->
-                    <input type="text" class="form-control" id="fund_name" name="fund_name" placeholder="">
-                    <label>Fund Name</label>
-                    <button class="w-10 btn btn-sm btn-primary" asp-page-handler="Fund" type="submit">Add Fund</button>
-
-                    <!--<select class="dropdown-menu position-static d-grid gap-1 p-2 rounded-3 mx-0 shadow" data-bs-theme="light" id="selected_funds" name="selected_funds" asp-items="Model.Funds"></select>-->
+                    <select class="dropdown-menu position-static d-grid gap-1 p-2 rounded-3 mx-0 shadow" data-bs-theme="light" id="selected_fund" name="selected_fund" asp-items="Model.Funds"></select>
+                    <button class="w-10 btn btn-sm btn-primary" asp-page-handler="AddFund" type="submit">Add Fund</button>
                 </div>
             </section>
             <div class="form-floating px-3 py-3">

@@ -15,4 +15,15 @@ public class User : ModelBase<User>
     public AuthenticationData? AuthenticationData { get; set; }
     public string? FirstName { get; init; }
     public string? LastName { get; init; }
+
+    public static User Default()
+    {
+        return new User
+        {
+            Id = Guid.Empty,
+            RoleId = Guid.Empty,
+            Email = string.Empty,
+            Password = string.Empty
+        };
+    }
 }

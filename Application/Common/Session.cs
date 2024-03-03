@@ -15,6 +15,7 @@ public static class Session
         public const string IsLoggedIn = "IsLoggedIn";
         public const string IsLogin = "IsLogin";
         public const string IsLogout = "IsLogout";
+        public const string ProjectionFormData = "ProjectionFormData";
     }
 
     public static bool HasValue(ISession session, string key)
