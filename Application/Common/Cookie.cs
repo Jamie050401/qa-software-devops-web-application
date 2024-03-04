@@ -4,8 +4,8 @@ using Newtonsoft.Json;
 
 public struct Cookies
 {
-    public const string AuthenticationData = "QAWA-AuthenticationData";
-    public const string HasLoggedIn = "QAWA-HasLoggedIn";
+    public const string AuthenticationData = "AuthenticationData";
+    public const string HasLoggedIn = "HasLoggedIn";
 }
 
 // TODO - Implement a means of detecting external manipulation of the encrypted cookie (invalidate it if it has been modified)
