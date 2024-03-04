@@ -2,6 +2,7 @@
 
 using Common;
 using NUnit.Framework;
+using System.Linq;
 
 [TestFixture]
 public class SecretGenerate

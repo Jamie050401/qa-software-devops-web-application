@@ -1,6 +1,8 @@
 ﻿namespace Application.Common;
 
+using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
+using System;
 
 public struct Cookies
 {

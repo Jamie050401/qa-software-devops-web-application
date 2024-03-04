@@ -1,5 +1,6 @@
 ﻿namespace Application.Models;
 
+using System;
 using System.Reflection;
 
 public interface IModel

@@ -6,6 +6,7 @@ using Data;
 using ILogger = Serilog.ILogger;
 using Models;
 using PageModel = Shared.PageModel;
+using System;
 using System.Diagnostics;
 
 public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel

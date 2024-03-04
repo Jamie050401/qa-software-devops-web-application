@@ -1,5 +1,7 @@
 ﻿namespace Application.Common;
 
+using System.Collections.Generic;
+
 public enum ResponseStatus
 {
     Success,

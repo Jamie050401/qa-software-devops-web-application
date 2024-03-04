@@ -1,6 +1,7 @@
 ﻿namespace Application.Models;
 
 using Common;
+using System;
 
 public class User : ModelBase<User>
 {

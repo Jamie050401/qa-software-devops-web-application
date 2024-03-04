@@ -2,8 +2,10 @@
 
 using Data;
 using ILogger = Serilog.ILogger;
+using Microsoft.AspNetCore.Http;
 using Models;
 using Newtonsoft.Json;
+using System;
 using System.Diagnostics;
 
 public struct SessionVariables

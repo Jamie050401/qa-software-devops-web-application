@@ -1,5 +1,7 @@
 ﻿namespace Application.Models;
 
+using System;
+
 public class Role : ModelBase<Role>
 {
     [PrimaryKey, NonNullable]

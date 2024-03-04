@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Models;
 using Newtonsoft.Json;
 using PageModel = Shared.PageModel;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 public class Projection : PageModel
 {

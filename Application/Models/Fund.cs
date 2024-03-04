@@ -1,5 +1,7 @@
 ﻿namespace Application.Models;
 
+using System;
+
 public class Fund : ModelBase<Fund>
 {
     [PrimaryKey, NonNullable]

@@ -1,5 +1,7 @@
 ﻿namespace Application.Models;
 
+using System;
+
 public class Result : ModelBase<Result>
 {
     public static Result Default()
