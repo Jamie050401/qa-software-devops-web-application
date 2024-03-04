@@ -11,7 +11,8 @@
             <section>
                 <h2>Personal Details</h2>
                 <div class="form-floating mb-3">
-                    <select class="dropdown-menu position-static d-grid gap-1 p-2 rounded-3 mx-0 shadow" data-bs-theme="light" id="title" name="title">
+                    <!-- TODO - Determine best way to dynamically apply 'selected' based on the value of 'Model.Title' -->
+                    <select class="dropdown-menu position-static d-grid gap-1 p-2 rounded-3 mx-0 shadow" data-bs-theme="light" id="Title" name="Title">
                         <option class="dropdown-item rounded-2" value="" disabled selected>Title</option>
                         <option class="dropdown-item rounded-2" value="Mr">Mr</option>
                         <option class="dropdown-item rounded-2" value="Mrs">Mrs</option>
@@ -21,36 +22,22 @@
                     </select>
                 </div>
                 <div class="form-floating mb-3">
-                    @if (string.IsNullOrEmpty(Model.CurrentUser.FirstName))
-                    {
-                        <input type="text" class="form-control" id="first_name" name="first_name" placeholder="">
-                    }
-                    else
-                    {
-                        <input type="text" class="form-control" id="first_name" name="first_name" value="@Model.CurrentUser.FirstName">
-                    }
+                    <input type="text" class="form-control" id="FirstName" name="FirstName" value="@Model.FirstName">
                     <label>First Name</label>
                 </div>
                 <div class="form-floating mb-3">
-                    @if (string.IsNullOrEmpty(Model.CurrentUser.LastName))
-                    {
-                        <input type="text" class="form-control" id="last_name" name="last_name" placeholder="">
-                    }
-                    else
-                    {
-                        <input type="text" class="form-control" id="last_name" name="last_name" value="@Model.CurrentUser.LastName">
-                    }
+                    <input type="text" class="form-control" id="LastName" name="LastName" value="@Model.LastName">
                     <label>Last Name</label>
                 </div>
                 <div class="form-floating mb-3">
-                    <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" placeholder="">
+                    <input type="date" class="form-control" id="DateOfBirth" name="DateOfBirth" value="@Model.GetDateOfBirthAsString()">
                     <label>Date of Birth</label>
                 </div>
             </section>
             <section>
                 <h2>Financial Details</h2>
                 <div class="form-floating mb-3">
-                    <input type="number" min="1000" step="100" class="form-control" id="total_investment" name="total_investment" placeholder="0.00">
+                    <input type="number" min="1000" step="100" class="form-control" id="Investment" name="Investment" value="@Model.Investment">
                     <label>Investment (£)</label>
                 </div>
             </section>
@@ -62,7 +49,7 @@
                     2. The 'Add Fund' button should update SelectedFunds and then return to this form with all the existing data populated
                     3. Once at least one element exists in SelectedFunds, they should be displayed in a table with the option to specify investment percentage
                     -->
-                    <select class="dropdown-menu position-static d-grid gap-1 p-2 rounded-3 mx-0 shadow" data-bs-theme="light" id="selected_fund" name="selected_fund" asp-items="Model.Funds"></select>
+                    <select class="dropdown-menu position-static d-grid gap-1 p-2 rounded-3 mx-0 shadow" data-bs-theme="light" id="SelectedFund" name="SelectedFund" asp-items="Model.Funds"></select>
                     <button class="w-10 btn btn-sm btn-primary" asp-page-handler="AddFund" type="submit">Add Fund</button>
                 </div>
             </section>
