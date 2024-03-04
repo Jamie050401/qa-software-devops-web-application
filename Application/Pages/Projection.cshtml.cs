@@ -74,13 +74,6 @@ public class Projection : PageModel
         Response.Redirect("/projection");
     }
 
-    public string GetDateOfBirthAsString()
-    {
-        var day = Form.DateOfBirth.Day.ToString().PadLeft(2, '0');
-        var month = Form.DateOfBirth.Month.ToString().PadLeft(2, '0');
-        return $"{Form.DateOfBirth.Year}-{month}-{day}";
-    }
-
     private static SelectListItem ConvertFundToSelectListItem(IModel model)
     {
         var fund = (Fund)model;
@@ -96,13 +89,12 @@ public class Projection : PageModel
 
     public class FormData
     {
-        public required string Title { get; set; }
-        public required string FirstName { get; set; }
-        public required string LastName { get; set; }
-        public required DateOnly DateOfBirth { get; set; }
-        public required decimal Investment { get; set; }
-        public required List<SelectListItem> Funds { get; set; }
-        public required List<Fund> SelectedFunds { get; set; }
+        public string GetDateOfBirthAsString()
+        {
+            var day = DateOfBirth.Day.ToString().PadLeft(2, '0');
+            var month = DateOfBirth.Month.ToString().PadLeft(2, '0');
+            return $"{DateOfBirth.Year}-{month}-{day}";
+        }
 
         public static FormData Default()
         {
@@ -117,5 +109,13 @@ public class Projection : PageModel
                 SelectedFunds = []
             };
         }
+
+        public required string Title { get; set; }
+        public required string FirstName { get; set; }
+        public required string LastName { get; set; }
+        public required DateOnly DateOfBirth { get; set; }
+        public required decimal Investment { get; set; }
+        public required List<SelectListItem> Funds { get; set; }
+        public required List<Fund> SelectedFunds { get; set; }
     }
 }
