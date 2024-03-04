@@ -13,35 +13,23 @@ public class Projection : PageModel
     {
         if (!Session.Authenticate(HttpContext.Session, Request, Response)) return;
 
-        var formData = Session.GetObject<FormData>(HttpContext.Session, Session.Variables.ProjectionFormData);
+        Form =
+            Session.GetObject<FormData>(HttpContext.Session, Session.Variables.ProjectionFormData)
+            ?? FormData.Default();
 
         CurrentUser =
             Session.GetObject<User>(HttpContext.Session, Session.Variables.CurrentUser)
             ?? Models.User.Default();
 
-        Title = formData?.Title ?? string.Empty;
-        FirstName = formData?.FirstName ?? CurrentUser.FirstName ?? string.Empty;
-        LastName = formData?.LastName ?? CurrentUser.LastName ?? string.Empty;
-        DateOfBirth = formData?.DateOfBirth ?? DateOnly.MinValue;
-        Investment = formData?.Investment ?? 0.0M;
-        Funds = formData is null
+        if (string.IsNullOrEmpty(Form.FirstName)) Form.FirstName = CurrentUser.FirstName ?? string.Empty;
+        if (string.IsNullOrEmpty(Form.LastName)) Form.LastName = CurrentUser.LastName ?? string.Empty;
+        Form.Funds = Form.Funds.Count is 0
             ? DatabaseManager.Database.ReadAll<Fund>().Value?.Select(ConvertFundToSelectListItem).ToList() ?? []
-            : formData.Funds;
-        SelectedFunds = formData is null
+            : Form.Funds;
+        Form.SelectedFunds = Form.SelectedFunds.Count is 0
             ? []
-            : formData.SelectedFunds;
-
-        formData = new FormData
-        {
-            Title = Title,
-            FirstName = FirstName,
-            LastName = LastName,
-            DateOfBirth = DateOfBirth,
-            Investment = Investment,
-            Funds = Funds,
-            SelectedFunds = SelectedFunds
-        };
-        Session.SetObject(HttpContext.Session, Session.Variables.ProjectionFormData, formData);
+            : Form.SelectedFunds;
+        Session.SetObject(HttpContext.Session, Session.Variables.ProjectionFormData, Form);
     }
 
     public void OnPost()
@@ -56,9 +44,9 @@ public class Projection : PageModel
 
     public void OnPostAddFund()
     {
-        var formData = Session.GetObject<FormData>(HttpContext.Session, Session.Variables.ProjectionFormData);
-        Funds = formData?.Funds ?? Funds;
-        SelectedFunds = formData?.SelectedFunds ?? SelectedFunds;
+        Form =
+            Session.GetObject<FormData>(HttpContext.Session, Session.Variables.ProjectionFormData)
+            ?? FormData.Default();
 
         var fund = JsonConvert.DeserializeObject<Fund>(Request.Form["SelectedFund"].ToString());
         if (fund is null)
@@ -67,20 +55,14 @@ public class Projection : PageModel
             return;
         }
 
-        SelectedFunds.Add(fund);
-        Funds = Funds.Where(element => element.Text != fund.Name).ToList();
-
-        formData = new FormData
-        {
-            Title = Request.Form["Title"].ToString(),
-            FirstName = Request.Form["FirstName"].ToString(),
-            LastName = Request.Form["LastName"].ToString(),
-            DateOfBirth = DateOnly.Parse(Request.Form["DateOfBirth"].ToString()),
-            Investment = decimal.Parse(Request.Form["Investment"].ToString()),
-            Funds = Funds,
-            SelectedFunds = SelectedFunds
-        };
-        Session.SetObject(HttpContext.Session, Session.Variables.ProjectionFormData, formData);
+        Form.Title = Request.Form["Title"].ToString();
+        Form.FirstName = Request.Form["FirstName"].ToString();
+        Form.LastName = Request.Form["LastName"].ToString();
+        Form.DateOfBirth = DateOnly.Parse(Request.Form["DateOfBirth"].ToString());
+        Form.Investment = decimal.Parse(Request.Form["Investment"].ToString());
+        Form.SelectedFunds.Add(fund);
+        Form.Funds = Form.Funds.Where(element => element.Text != fund.Name).ToList();
+        Session.SetObject(HttpContext.Session, Session.Variables.ProjectionFormData, Form);
 
         Response.Redirect("/projection");
     }
@@ -94,7 +76,9 @@ public class Projection : PageModel
 
     public string GetDateOfBirthAsString()
     {
-        return $"{DateOfBirth.Year}-{DateOfBirth.Month.ToString().PadLeft(2, '0')}-{DateOfBirth.Day.ToString().PadLeft(2, '0')}";
+        var day = Form.DateOfBirth.Day.ToString().PadLeft(2, '0');
+        var month = Form.DateOfBirth.Month.ToString().PadLeft(2, '0');
+        return $"{Form.DateOfBirth.Year}-{month}-{day}";
     }
 
     private static SelectListItem ConvertFundToSelectListItem(IModel model)
@@ -108,22 +92,30 @@ public class Projection : PageModel
     }
 
     public User CurrentUser { get; private set; } = Models.User.Default();
-    public string Title { get; private set; } = string.Empty;
-    public string FirstName { get; private set; } = string.Empty;
-    public string LastName { get; private set; } = string.Empty;
-    public DateOnly DateOfBirth { get; private set; }
-    public decimal Investment { get; private set; }
-    public List<SelectListItem> Funds { get; private set; } = [];
-    public List<Fund> SelectedFunds { get; private set; } = [];
+    public FormData Form { get; private set; } = FormData.Default();
 
-    private class FormData
+    public class FormData
     {
-        public required string Title { get; init; }
-        public required string FirstName { get; init; }
-        public required string LastName { get; init; }
-        public required DateOnly DateOfBirth { get; init; }
-        public required decimal Investment { get; init; }
-        public required List<SelectListItem> Funds { get; init; }
-        public required List<Fund> SelectedFunds { get; init; }
+        public required string Title { get; set; }
+        public required string FirstName { get; set; }
+        public required string LastName { get; set; }
+        public required DateOnly DateOfBirth { get; set; }
+        public required decimal Investment { get; set; }
+        public required List<SelectListItem> Funds { get; set; }
+        public required List<Fund> SelectedFunds { get; set; }
+
+        public static FormData Default()
+        {
+            return new FormData
+            {
+                Title = string.Empty,
+                FirstName = string.Empty,
+                LastName = string.Empty,
+                DateOfBirth = DateOnly.MinValue,
+                Investment = 0.0M,
+                Funds = [],
+                SelectedFunds = []
+            };
+        }
     }
 }
