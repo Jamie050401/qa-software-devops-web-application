@@ -58,21 +58,21 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
             return;
         }
 
-        Session.DeleteObject(HttpContext.Session, Session.Variables.RegistrationFormData);
+        Session.DeleteObject(HttpContext.Session, SessionVariables.RegistrationFormData);
         Session.Login(HttpContext.Session, HttpContext.Connection, Request, Response, Form.RememberMe, Form.Email, user);
     }
 
     public void OnPostSwitch()
     {
-        Session.DeleteObject(HttpContext.Session, Session.Variables.RegistrationSwitch);
-        Session.DeleteObject(HttpContext.Session, Session.Variables.RegistrationFormData);
+        Session.DeleteObject(HttpContext.Session, SessionVariables.RegistrationSwitch);
+        Session.DeleteObject(HttpContext.Session, SessionVariables.RegistrationFormData);
 
         Response.Redirect("/login");
     }
 
     private FormData GetForm()
     {
-        return Session.GetObject<FormData>(HttpContext.Session, Session.Variables.RegistrationFormData)
+        return Session.GetObject<FormData>(HttpContext.Session, SessionVariables.RegistrationFormData)
                ?? FormData.Default();
     }
 

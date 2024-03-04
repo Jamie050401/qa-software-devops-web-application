@@ -12,14 +12,14 @@ public class DashboardModel(INotyfService notyf) : PageModel
         if (!Session.Authenticate(HttpContext.Session, Request, Response)) return;
 
         // ReSharper disable once InvertIf
-        if (Session.GetBoolean(HttpContext.Session, Session.Variables.IsLogin))
+        if (Session.GetBoolean(HttpContext.Session, SessionVariables.IsLogin))
         {
             notyf.Success("Logged in successfully.");
-            Session.DeleteObject(HttpContext.Session, Session.Variables.IsLogin);
+            Session.DeleteObject(HttpContext.Session, SessionVariables.IsLogin);
         }
 
         CurrentUser =
-            Session.GetObject<User>(HttpContext.Session, Session.Variables.CurrentUser)
+            Session.GetObject<User>(HttpContext.Session, SessionVariables.CurrentUser)
             ?? Models.User.Default();
     }
 

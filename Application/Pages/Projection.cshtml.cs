@@ -15,7 +15,7 @@ public class Projection : PageModel
 
         Form = this.GetForm();
         CurrentUser =
-            Session.GetObject<User>(HttpContext.Session, Session.Variables.CurrentUser)
+            Session.GetObject<User>(HttpContext.Session, SessionVariables.CurrentUser)
             ?? Models.User.Default();
 
         if (string.IsNullOrEmpty(Form.FirstName)) Form.FirstName = CurrentUser.FirstName ?? string.Empty;
@@ -26,7 +26,7 @@ public class Projection : PageModel
         Form.SelectedFunds = Form.SelectedFunds.Count is 0
             ? []
             : Form.SelectedFunds;
-        Session.SetObject(HttpContext.Session, Session.Variables.ProjectionFormData, Form);
+        Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
     }
 
     public void OnPost()
@@ -38,7 +38,7 @@ public class Projection : PageModel
 
         // TODO - Store 'Result' in database
 
-        Session.DeleteObject(HttpContext.Session, Session.Variables.ProjectionFormData);
+        Session.DeleteObject(HttpContext.Session, SessionVariables.ProjectionFormData);
 
         Response.Redirect($"/results?id={result.Id}");
     }
@@ -57,7 +57,7 @@ public class Projection : PageModel
         this.GetFormData();
         Form.SelectedFunds.Add(fund);
         Form.Funds = Form.Funds.Where(element => element.Text != fund.Name).ToList();
-        Session.SetObject(HttpContext.Session, Session.Variables.ProjectionFormData, Form);
+        Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
 
         Response.Redirect("/projection");
     }
@@ -74,7 +74,7 @@ public class Projection : PageModel
 
     private FormData GetForm()
     {
-        return Session.GetObject<FormData>(HttpContext.Session, Session.Variables.ProjectionFormData)
+        return Session.GetObject<FormData>(HttpContext.Session, SessionVariables.ProjectionFormData)
                ?? FormData.Default();
     }
 
