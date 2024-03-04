@@ -27,10 +27,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
     public void OnPost()
     {
         Form = this.GetForm();
-
-        Form.Email = Request.Form["Email"].ToString();
-        Form.Password = Request.Form["Password"].ToString();
-        Form.RememberMe = bool.TryParse(Request.Form["RememberMe"].ToString(), out var hasRememberMe) && hasRememberMe;
+        this.GetFormData();
 
         var isEmailValid = Validate.Email(notyf, Form.Email); // TODO - Validate maximum length of email
         if (!isEmailValid) return;
@@ -71,6 +68,13 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
     {
         return Session.GetObject<FormData>(HttpContext.Session, Session.Variables.LoginFormData)
                ?? FormData.Default();
+    }
+
+    private void GetFormData()
+    {
+        Form.Email = Request.Form["Email"].ToString();
+        Form.Password = Request.Form["Password"].ToString();
+        Form.RememberMe = bool.TryParse(Request.Form["RememberMe"].ToString(), out var hasRememberMe) && hasRememberMe;
     }
 
     public class FormData

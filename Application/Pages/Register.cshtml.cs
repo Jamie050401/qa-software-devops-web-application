@@ -21,13 +21,7 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
     public void OnPost()
     {
         Form = this.GetForm();
-
-        Form.Email = Request.Form["Email"].ToString();
-        Form.FirstName = Request.Form["FirstName"].ToString();
-        Form.LastName = Request.Form["LastName"].ToString();
-        Form.PasswordFirst = Request.Form["PasswordFirst"].ToString();
-        Form.PasswordSecond = Request.Form["PasswordSecond"].ToString();
-        Form.RememberMe = bool.TryParse(Request.Form["RememberMe"].ToString(), out var isRemembered) && isRemembered;
+        this.GetFormData();
 
         var isEmailValid = Validate.Email(notyf, Form.Email);
         if (!isEmailValid) return;
@@ -80,6 +74,16 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
     {
         return Session.GetObject<FormData>(HttpContext.Session, Session.Variables.RegistrationFormData)
                ?? FormData.Default();
+    }
+
+    private void GetFormData()
+    {
+        Form.Email = Request.Form["Email"].ToString();
+        Form.FirstName = Request.Form["FirstName"].ToString();
+        Form.LastName = Request.Form["LastName"].ToString();
+        Form.PasswordFirst = Request.Form["PasswordFirst"].ToString();
+        Form.PasswordSecond = Request.Form["PasswordSecond"].ToString();
+        Form.RememberMe = bool.TryParse(Request.Form["RememberMe"].ToString(), out var isRemembered) && isRemembered;
     }
 
     public class FormData

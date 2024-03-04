@@ -65,10 +65,17 @@ public class Projection : PageModel
     public void OnPostDeleteFund()
     {
         Form = this.GetForm();
+        this.GetFormData();
 
         // ...
 
         Response.Redirect("/projection");
+    }
+
+    private FormData GetForm()
+    {
+        return Session.GetObject<FormData>(HttpContext.Session, Session.Variables.ProjectionFormData)
+               ?? FormData.Default();
     }
 
     private void GetFormData()
@@ -78,12 +85,6 @@ public class Projection : PageModel
         Form.LastName = Request.Form["LastName"].ToString();
         Form.DateOfBirth = DateOnly.Parse(Request.Form["DateOfBirth"].ToString());
         Form.Investment = decimal.Parse(Request.Form["Investment"].ToString());
-    }
-
-    private FormData GetForm()
-    {
-        return Session.GetObject<FormData>(HttpContext.Session, Session.Variables.ProjectionFormData)
-               ?? FormData.Default();
     }
 
     private static SelectListItem ConvertFundToSelectListItem(IModel model)
