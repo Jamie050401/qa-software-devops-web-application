@@ -13,7 +13,7 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
     public void OnGet()
     {
         if (Session.Redirect(HttpContext.Session, Request, Response)) return;
-        Session.Login(logger, HttpContext.Session, Request, Response);
+        Session.TryCookieLogin(logger, HttpContext.Session, Request, Response);
     }
 
     public void OnPost()

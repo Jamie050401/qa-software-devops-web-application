@@ -96,9 +96,6 @@ public class Projection : PageModel
         };
     }
 
-    public User CurrentUser { get; private set; } = Models.User.Default();
-    public FormData Form { get; private set; } = FormData.Default();
-
     public class FormData
     {
         public string GetDateOfBirthAsString()
@@ -130,4 +127,7 @@ public class Projection : PageModel
         public required List<SelectListItem> Funds { get; set; }
         public required List<Fund> SelectedFunds { get; set; }
     }
+
+    public User CurrentUser { get; private set; } = Models.User.Default();
+    public FormData Form { get; private set; } = FormData.Default();
 }

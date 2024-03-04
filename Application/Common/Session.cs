@@ -15,6 +15,7 @@ public static class Session
         public const string IsLoggedIn = "IsLoggedIn";
         public const string IsLogin = "IsLogin";
         public const string IsLogout = "IsLogout";
+        public const string LoginFormData = "LoginFormData";
         public const string ProjectionFormData = "ProjectionFormData";
     }
 
@@ -121,13 +122,13 @@ public static class Session
 
     // TODO - Implement logic to regenerate the token everytime it is used?
     // TODO - Implement support for multiple cookies per user (i.e. 1 per device)
-    public static void Login(ILogger logger, ISession session, HttpRequest request, HttpResponse response)
+    public static bool TryCookieLogin(ILogger logger, ISession session, HttpRequest request, HttpResponse response)
     {
         var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, Cookies.AuthenticationData);
         if (cookieResponse.Status is ResponseStatus.Error || !cookieResponse.HasValue)
         {
             logger.Information("Login failure: unable to retrieve authentication data from cookies");
-            return;
+            return false;
         }
         Debug.Assert(cookieResponse.Value != null, "cookieResponse.Value != null");
         var authenticationData = cookieResponse.Value;
@@ -137,7 +138,7 @@ public static class Session
         {
             logger.Information("Login failure: unable to find user matching authentication data stored in cookies");
             Cookie.Remove(response, Cookies.AuthenticationData);
-            return;
+            return false;
         }
         Debug.Assert(dbResponse.Value != null, "databaseResponse.Value != null");
         var userInDb = (User)dbResponse.Value;
@@ -152,7 +153,7 @@ public static class Session
         if (!isAuthenticated)
         {
             Cookie.Remove(response, Cookies.AuthenticationData);
-            return;
+            return false;
         }
 
         SetBoolean(session, Variables.IsLoggedIn, true);
@@ -160,6 +161,7 @@ public static class Session
         SetBoolean(session, Variables.IsLogin, true);
         SetObject(session, Variables.CurrentUser, userInDb);
         response.Redirect("/dashboard", true);
+        return true;
     }
 
     public static void Login(ISession session, ConnectionInfo connectionInfo, HttpRequest request, HttpResponse response, bool hasRememberMe, string email, User userInDb)

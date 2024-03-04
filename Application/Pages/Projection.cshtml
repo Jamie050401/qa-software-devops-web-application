@@ -22,11 +22,11 @@
                     </select>
                 </div>
                 <div class="form-floating mb-3">
-                    <input type="text" class="form-control" id="FirstName" name="FirstName" value="@Model.Form.FirstName">
+                    <input type="text" class="form-control" id="FirstName" name="FirstName" placeholder="" value="@Model.Form.FirstName">
                     <label>First Name</label>
                 </div>
                 <div class="form-floating mb-3">
-                    <input type="text" class="form-control" id="LastName" name="LastName" value="@Model.Form.LastName">
+                    <input type="text" class="form-control" id="LastName" name="LastName" placeholder="" value="@Model.Form.LastName">
                     <label>Last Name</label>
                 </div>
                 <div class="form-floating mb-3">
@@ -37,7 +37,7 @@
             <section>
                 <h2>Financial Details</h2>
                 <div class="form-floating mb-3">
-                    <input type="number" min="1000" step="100" class="form-control" id="Investment" name="Investment" value="@Model.Form.Investment">
+                    <input type="number" min="10000" step="1000" class="form-control" id="Investment" placeholder="" name="Investment" value="@Model.Form.Investment">
                     <label>Investment (£)</label>
                 </div>
             </section>
