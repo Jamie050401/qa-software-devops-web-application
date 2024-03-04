@@ -34,12 +34,19 @@ public class Projection : PageModel
 
     public void OnPost()
     {
-        // This should be called to submit the projection form
-        // ...
+        Form =
+            Session.GetObject<FormData>(HttpContext.Session, Session.Variables.ProjectionFormData)
+            ?? FormData.Default();
+
+        this.GetFormData();
+
+        var result = Result.Default(); // TODO - Perform calculation and return 'Result'
+
+        // TODO - Store 'Result' in database
 
         Session.DeleteObject(HttpContext.Session, Session.Variables.ProjectionFormData);
 
-        // TODO - Redirect to results page, with the result for the current projection automatically opened
+        Response.Redirect($"/results?id={result.Id}");
     }
 
     public void OnPostAddFund()
@@ -55,11 +62,7 @@ public class Projection : PageModel
             return;
         }
 
-        Form.Title = Request.Form["Title"].ToString();
-        Form.FirstName = Request.Form["FirstName"].ToString();
-        Form.LastName = Request.Form["LastName"].ToString();
-        Form.DateOfBirth = DateOnly.Parse(Request.Form["DateOfBirth"].ToString());
-        Form.Investment = decimal.Parse(Request.Form["Investment"].ToString());
+        this.GetFormData();
         Form.SelectedFunds.Add(fund);
         Form.Funds = Form.Funds.Where(element => element.Text != fund.Name).ToList();
         Session.SetObject(HttpContext.Session, Session.Variables.ProjectionFormData, Form);
@@ -72,6 +75,15 @@ public class Projection : PageModel
         // ...
 
         Response.Redirect("/projection");
+    }
+
+    private void GetFormData()
+    {
+        Form.Title = Request.Form["Title"].ToString();
+        Form.FirstName = Request.Form["FirstName"].ToString();
+        Form.LastName = Request.Form["LastName"].ToString();
+        Form.DateOfBirth = DateOnly.Parse(Request.Form["DateOfBirth"].ToString());
+        Form.Investment = decimal.Parse(Request.Form["Investment"].ToString());
     }
 
     private static SelectListItem ConvertFundToSelectListItem(IModel model)

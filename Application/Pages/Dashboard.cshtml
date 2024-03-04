@@ -29,13 +29,13 @@
         </div>
         <div class="col-lg-6">
             <div class="text-center">
-                @if (string.IsNullOrEmpty(Model.CurrentUser?.FirstName))
+                @if (string.IsNullOrEmpty(Model.CurrentUser.FirstName))
                 {
                     <h1 class="display-5 fw-bold text-body-emphasis lh-1 mb-3">Welcome!</h1>
                 }
                 else
                 {
-                    <h1 class="display-5 fw-bold text-body-emphasis lh-1 mb-3">Welcome @Model.CurrentUser.FirstName!</h1>
+                    <h1 class="display-5 fw-bold text-body-emphasis lh-1 mb-3">Welcome @Model.CurrentUser.FirstName</h1>
                 }
             </div>
             <p class="lead">Choose 'Get Projection' below to choose how your money should be invested and receive a projection of its value in 10 years time. 'View Results' to review previous projections you have requested.</p>
