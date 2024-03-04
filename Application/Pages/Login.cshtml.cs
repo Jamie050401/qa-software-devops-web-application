@@ -15,22 +15,18 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         if (Session.GetBoolean(HttpContext.Session, Session.Variables.IsLogout))
         {
             notyf.Success("Logged out successfully.");
-            Session.SetBoolean(HttpContext.Session, Session.Variables.IsLogout, false);
+            Session.DeleteObject(HttpContext.Session, Session.Variables.IsLogout);
         }
 
         if (Session.Redirect(HttpContext.Session, Request, Response)) return;
         if (Session.TryCookieLogin(logger, HttpContext.Session, Request, Response)) return;
 
-        Form =
-            Session.GetObject<FormData>(HttpContext.Session, Session.Variables.LoginFormData)
-            ?? FormData.Default();
+        Form = this.GetForm();
     }
 
     public void OnPost()
     {
-        Form =
-            Session.GetObject<FormData>(HttpContext.Session, Session.Variables.LoginFormData)
-            ?? FormData.Default();
+        Form = this.GetForm();
 
         Form.Email = Request.Form["Email"].ToString();
         Form.Password = Request.Form["Password"].ToString();
@@ -65,14 +61,16 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
 
     public void OnPostSwitch()
     {
-        if (Session.GetBoolean(HttpContext.Session, Session.Variables.HasLoggedIn))
-        {
-            Session.SetBoolean(HttpContext.Session, Session.Variables.HasLoggedIn, false);
-        }
-
+        Session.SetBoolean(HttpContext.Session, Session.Variables.RegistrationSwitch, true);
         Session.DeleteObject(HttpContext.Session, Session.Variables.LoginFormData);
 
         Response.Redirect("/register");
+    }
+
+    private FormData GetForm()
+    {
+        return Session.GetObject<FormData>(HttpContext.Session, Session.Variables.LoginFormData)
+               ?? FormData.Default();
     }
 
     public class FormData

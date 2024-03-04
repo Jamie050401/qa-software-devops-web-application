@@ -17,6 +17,8 @@ public static class Session
         public const string IsLogout = "IsLogout";
         public const string LoginFormData = "LoginFormData";
         public const string ProjectionFormData = "ProjectionFormData";
+        public const string RegistrationFormData = "RegistrationFormData";
+        public const string RegistrationSwitch = "RegistrationSwitch";
     }
 
     public static bool HasValue(ISession session, string key)
@@ -103,6 +105,7 @@ public static class Session
 
         var isLoggedIn = GetBoolean(session, Variables.IsLoggedIn);
         var hasLoggedIn = GetBoolean(session, Variables.HasLoggedIn);
+        var isRegistrationSwitch = GetBoolean(session, Variables.RegistrationSwitch);
 
         if (isLoggedIn)
         {
@@ -111,7 +114,7 @@ public static class Session
         }
 
         // ReSharper disable once InvertIf
-        if (hasLoggedIn && request.Path.Value == "/register")
+        if (hasLoggedIn && !isRegistrationSwitch && request.Path.Value == "/register")
         {
             response.Redirect("/login", true);
             return true;
@@ -160,6 +163,7 @@ public static class Session
         SetBoolean(session, Variables.HasLoggedIn, true);
         SetBoolean(session, Variables.IsLogin, true);
         SetObject(session, Variables.CurrentUser, userInDb);
+        DeleteObject(session, Variables.RegistrationSwitch);
         response.Redirect("/dashboard", true);
         return true;
     }
@@ -195,6 +199,7 @@ public static class Session
         Cookie.Store(response, Cookies.HasLoggedIn, true, DateTimeOffset.UtcNow.AddDays(90), true);
         SetBoolean(session, Variables.IsLogin, true);
         SetObject(session, Variables.CurrentUser, userInDb);
+        DeleteObject(session, Variables.RegistrationSwitch);
         response.Redirect("/dashboard", true);
     }
 
@@ -203,7 +208,7 @@ public static class Session
         Cookie.Remove(response, Cookies.AuthenticationData);
 
         SetBoolean(session, Variables.IsLogout, true);
-        SetBoolean(session, Variables.IsLoggedIn, false);
+        DeleteObject(session, Variables.IsLoggedIn);
         DeleteObject(session, Variables.CurrentUser);
         response.Redirect("/login", true);
     }

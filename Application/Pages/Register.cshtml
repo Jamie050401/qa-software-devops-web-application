@@ -16,28 +16,28 @@
         <div class="col">
             <form class="p-4 p-md-5 border rounded-3 bg-light" method="POST">
                 <div class="form-floating mb-3">
-                    <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com">
-                    <label>Email address</label>
+                    <input type="email" class="form-control" id="Email" name="Email" placeholder="" value="@Model.Form.Email">
+                    <label for="Email">Email address</label>
                 </div>
                 <div class="form-floating mb-3">
-                    <input type="text" class="form-control" id="first_name" name="first_name" placeholder="First Name">
-                    <label>First name</label>
+                    <input type="text" class="form-control" id="FirstName" name="FirstName" placeholder="" value="@Model.Form.FirstName">
+                    <label for="FirstName">First name</label>
                 </div>
                 <div class="form-floating mb-3">
-                    <input type="text" class="form-control" id="last_name" name="last_name" placeholder="Last Name">
-                    <label>Last name</label>
+                    <input type="text" class="form-control" id="LastName" name="LastName" placeholder="" value="@Model.Form.LastName">
+                    <label for="LastName">Last name</label>
                 </div>
                 <div class="form-floating mb-3">
-                    <input type="password" class="form-control" id="password_first" name="password_first" placeholder="Password">
-                    <label>Password</label>
+                    <input type="password" class="form-control" id="PasswordFirst" name="PasswordFirst" placeholder="" value="@Model.Form.PasswordFirst">
+                    <label for="PasswordFirst">Password</label>
                 </div>
                 <div class="form-floating mb-3">
-                    <input type="password" class="form-control" id="password_second" name="password_second" placeholder="Password">
-                    <label>Confirm password</label>
+                    <input type="password" class="form-control" id="PasswordSecond" name="PasswordSecond" placeholder="" value="@Model.Form.PasswordSecond">
+                    <label for="PasswordSecond">Confirm password</label>
                 </div>
                 <div class="checkbox mb-3 text-center">
                     <label>
-                        <input type="checkbox" id="remember_me" name="remember_me" value="true"> Remember me
+                        <input type="checkbox" id="RememberMe" name="RememberMe" value="@Model.Form.RememberMe"> Remember me
                     </label>
                 </div>
                 <button class="w-100 btn btn-lg btn-primary" type="submit">Sign-up</button>

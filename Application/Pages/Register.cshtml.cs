@@ -14,21 +14,25 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
     {
         if (Session.Redirect(HttpContext.Session, Request, Response)) return;
         Session.TryCookieLogin(logger, HttpContext.Session, Request, Response);
+
+        Form = this.GetForm();
     }
 
     public void OnPost()
     {
-        var email = Request.Form["email"].ToString();
-        var firstName = Request.Form["first_name"].ToString();
-        var lastName = Request.Form["last_name"].ToString();
-        var password = Request.Form["password_first"].ToString();
-        var confirmPassword = Request.Form["password_second"].ToString();
-        var hasRememberMe = bool.TryParse(Request.Form["remember-me"].ToString(), out var isRemembered) && isRemembered;
+        Form = this.GetForm();
 
-        var isEmailValid = Validate.Email(notyf, email);
+        Form.Email = Request.Form["Email"].ToString();
+        Form.FirstName = Request.Form["FirstName"].ToString();
+        Form.LastName = Request.Form["LastName"].ToString();
+        Form.PasswordFirst = Request.Form["PasswordFirst"].ToString();
+        Form.PasswordSecond = Request.Form["PasswordSecond"].ToString();
+        Form.RememberMe = bool.TryParse(Request.Form["RememberMe"].ToString(), out var isRemembered) && isRemembered;
+
+        var isEmailValid = Validate.Email(notyf, Form.Email);
         if (!isEmailValid) return;
 
-        var isPasswordValid = Validate.Password(notyf, password, confirmPassword);
+        var isPasswordValid = Validate.Password(notyf, Form.PasswordFirst, Form.PasswordSecond);
         if (!isPasswordValid) return;
 
         var dbResponse = DatabaseManager.Database.Read(Role.GetProperty("Name"), "Default");
@@ -45,10 +49,10 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Email = email,
-            Password = Secret.Hash(password),
-            FirstName = firstName,
-            LastName = lastName,
+            Email = Form.Email,
+            Password = Secret.Hash(Form.PasswordFirst),
+            FirstName = Form.FirstName,
+            LastName = Form.LastName,
             RoleId = role.Id
         };
 
@@ -60,11 +64,47 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
             return;
         }
 
-        Session.Login(HttpContext.Session, HttpContext.Connection, Request, Response, hasRememberMe, email, user);
+        Session.DeleteObject(HttpContext.Session, Session.Variables.RegistrationFormData);
+        Session.Login(HttpContext.Session, HttpContext.Connection, Request, Response, Form.RememberMe, Form.Email, user);
     }
 
     public void OnPostSwitch()
     {
+        Session.DeleteObject(HttpContext.Session, Session.Variables.RegistrationSwitch);
+        Session.DeleteObject(HttpContext.Session, Session.Variables.RegistrationFormData);
+
         Response.Redirect("/login");
     }
+
+    private FormData GetForm()
+    {
+        return Session.GetObject<FormData>(HttpContext.Session, Session.Variables.RegistrationFormData)
+               ?? FormData.Default();
+    }
+
+    public class FormData
+    {
+
+        public static FormData Default()
+        {
+            return new FormData
+            {
+                Email = string.Empty,
+                FirstName = null,
+                LastName = null,
+                PasswordFirst = string.Empty,
+                PasswordSecond = string.Empty,
+                RememberMe = false
+            };
+        }
+
+        public required string Email { get; set; }
+        public required string? FirstName { get; set; }
+        public required string? LastName { get; set; }
+        public required string PasswordFirst { get; set; }
+        public required string PasswordSecond { get; set; }
+        public required bool RememberMe { get; set; }
+    }
+
+    public FormData Form { get; private set; } = FormData.Default();
 }

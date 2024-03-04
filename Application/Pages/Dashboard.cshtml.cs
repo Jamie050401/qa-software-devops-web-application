@@ -15,7 +15,7 @@ public class DashboardModel(INotyfService notyf) : PageModel
         if (Session.GetBoolean(HttpContext.Session, Session.Variables.IsLogin))
         {
             notyf.Success("Logged in successfully.");
-            Session.SetBoolean(HttpContext.Session, Session.Variables.IsLogin, false);
+            Session.DeleteObject(HttpContext.Session, Session.Variables.IsLogin);
         }
 
         CurrentUser =
