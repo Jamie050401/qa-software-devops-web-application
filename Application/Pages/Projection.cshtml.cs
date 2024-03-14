@@ -26,9 +26,7 @@ public class Projection : PageModel
         Form.Funds = Form.Funds.Count is 0
             ? DatabaseManager.Database.ReadAll<Fund>().Value?.Select(ConvertFundToSelectListItem).ToList() ?? []
             : Form.Funds;
-        Form.SelectedFunds = Form.SelectedFunds.Count is 0
-            ? []
-            : Form.SelectedFunds;
+        Form.SelectedFunds = Form.SelectedFunds;
         Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
     }
 
@@ -49,6 +47,7 @@ public class Projection : PageModel
     public void OnPostAddFund()
     {
         Form = this.GetForm();
+        this.GetFormData();
 
         var fund = JsonConvert.DeserializeObject<Fund>(Request.Form["SelectedFund"].ToString());
         if (fund is null)
@@ -57,7 +56,6 @@ public class Projection : PageModel
             return;
         }
 
-        this.GetFormData();
         Form.SelectedFunds.Add(fund);
         Form.Funds = Form.Funds.Where(element => element.Text != fund.Name).ToList();
         Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
