@@ -27,7 +27,6 @@ public class Projection : PageModel
         Form.Funds = Form.Funds.Count is 0 && Form.SelectedFunds.Count is 0
             ? DatabaseManager.Database.ReadAll<Fund>().Value?.Select(ConvertFundToSelectListItem).ToList() ?? []
             : Form.Funds;
-        Form.SelectedFunds = Form.SelectedFunds;
         Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
     }
 
@@ -36,13 +35,15 @@ public class Projection : PageModel
         Form = this.GetForm();
         this.GetFormData();
 
-        var result = Result.Default(); // TODO - Perform calculation and return 'Result'
+        // TODO - Validate inputs (i.e. investment percentages must sum to 100% etc.)
+
+        //var result = Result.Default(); // TODO - Perform calculation and return 'Result'
 
         // TODO - Store 'Result' in database
 
-        Session.DeleteObject(HttpContext.Session, SessionVariables.ProjectionFormData);
+        //Session.DeleteObject(HttpContext.Session, SessionVariables.ProjectionFormData);
 
-        Response.Redirect($"/results?id={result.Id}");
+        //Response.Redirect($"/results?id={result.Id}");
     }
 
     public void OnPostAddFund()
@@ -93,6 +94,14 @@ public class Projection : PageModel
         Form.LastName = Request.Form["LastName"].ToString();
         Form.DateOfBirth = DateOnly.Parse(Request.Form["DateOfBirth"].ToString());
         Form.Investment = decimal.Parse(Request.Form["Investment"].ToString());
+
+        foreach (var fund in Form.SelectedFunds)
+        {
+            if (decimal.TryParse(Request.Form[$"InvestmentPercentage-{fund.Id}"].ToString(), out var investmentPercentage))
+            {
+                Form.InvestmentPercentages.ForceAdd(fund.Id, investmentPercentage);
+            }
+        }
     }
 
     private static SelectListItem ConvertFundToSelectListItem(IModel model)
@@ -114,6 +123,13 @@ public class Projection : PageModel
             return $"{DateOfBirth.Year}-{month}-{day}";
         }
 
+        public decimal GetInvestmentPercentage(Guid id)
+        {
+            return InvestmentPercentages.TryGetValue(id, out var investmentPercentage)
+                ? investmentPercentage
+                : 0M;
+        }
+
         public static FormData Default()
         {
             return new FormData
@@ -124,7 +140,8 @@ public class Projection : PageModel
                 DateOfBirth = DateOnly.MinValue,
                 Investment = 0.0M,
                 Funds = [],
-                SelectedFunds = []
+                SelectedFunds = [],
+                InvestmentPercentages = []
             };
         }
 
@@ -135,6 +152,7 @@ public class Projection : PageModel
         public required decimal Investment { get; set; }
         public required List<SelectListItem> Funds { get; set; }
         public required List<Fund> SelectedFunds { get; set; }
+        public required Dictionary<Guid, decimal> InvestmentPercentages { get; set; }
     }
 
     public User CurrentUser { get; private set; } = Models.User.Default();

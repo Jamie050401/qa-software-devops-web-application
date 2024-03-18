@@ -71,7 +71,7 @@
                             {
                                 <tr>
                                     <td>@fund.Name</td>
-                                    <td>0.00%</td> <!-- TODO - Implement investment percentages -->
+                                    <td><input type="number" min="1" max="100" step="5" class="form-control" id="InvestmentPercentage-@fund.Id" placeholder="" name="InvestmentPercentage-@fund.Id" value="@Model.Form.GetInvestmentPercentage(fund.Id)"/></td>
                                     <td>
                                         <button class="w-10 btn btn-sm btn-danger" asp-page-handler="DeleteFund" onclick="deleteFundClickHandler(this.value)" value="@fund.Id.ToString()">X</button>
                                     </td>
