@@ -55,22 +55,33 @@
                     <label>Investment (£)</label>
                 </div>
             </section>
-            @if (Model.Form.Funds.Count is not 0)
-            {
-                <section>
-                    <h3>Fund Choices</h3>
-                    <div class="form-floating mb-3">
-                        <!-- TODO
-                        1. Make button appear beside 'Fund Name' field
-                        2. The 'Add Fund' button should update SelectedFunds and then return to this form with all the existing data populated
-                        3. Once at least one element exists in SelectedFunds, they should be displayed in a table with the option to specify investment percentage
-                        -->
+            <section>
+                <h3>Fund Choices</h3>
+                <div class="form-floating mb-3">
+                    @if (Model.Form.SelectedFunds.Count > 0)
+                    {
+                        <table class="table">
+                            <tr>
+                                <th>Fund Name</th>
+                                <th>Investment Percentage</th>
+                            </tr>
+                            @foreach (var fund in Model.Form.SelectedFunds)
+                            {
+                                <tr>
+                                    <td>@fund.Name</td>
+                                    <td>0.00%</td> <!-- TODO - Implement investment percentages -->
+                                </tr>
+                            }
+                        </table>
+                    }
 
+                    @if (Model.Form.Funds.Count is not 0)
+                    {
                         <select class="dropdown-menu position-static d-grid gap-1 p-2 rounded-3 mx-0 shadow" data-bs-theme="light" id="SelectedFund" name="SelectedFund" asp-items="Model.Form.Funds"></select>
                         <button class="w-10 btn btn-sm btn-primary" asp-page-handler="AddFund" type="submit">Add Fund</button>
-                    </div>
-                </section>
-            }
+                    }
+                </div>
+            </section>
             <div class="form-floating px-3 py-3">
                 <button class="w-100 btn btn-lg btn-primary" type="submit">Get Projection</button>
             </div>
