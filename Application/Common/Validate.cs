@@ -2,6 +2,7 @@
 
 using AspNetCoreHero.ToastNotification.Abstractions;
 using Pages;
+using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -50,21 +51,28 @@ public static partial class Validate
         var isValid = form.FirstName.Length is > 0 and < 41;
         if (!isValid)
         {
-            notyf?.Error("Please ensure First Name is valid and less than 41 characters");
+            notyf?.Error("Please ensure your first name is valid and less than 41 characters");
             return isValid;
         }
 
         isValid = form.LastName.Length is > 0 and < 41;
         if (!isValid)
         {
-            notyf?.Error("Please ensure Last Name is valid and less than 41 characters");
+            notyf?.Error("Please ensure your last name is valid and less than 41 characters");
+            return isValid;
+        }
+
+        isValid = form.DateOfBirth != DateOnly.MinValue;
+        if (!isValid)
+        {
+            notyf?.Error("Please select a valid date of birth");
             return isValid;
         }
 
         isValid = form.Investment >= 10000.0M;
         if (!isValid)
         {
-            notyf?.Error("Investment must be at least £10,000.0");
+            notyf?.Error("Investment amount must be at least £10,000.0");
             return isValid;
         }
 
@@ -72,7 +80,7 @@ public static partial class Validate
         // ReSharper disable once InvertIf
         if (!isValid)
         {
-            notyf?.Error("Please ensure Investment Percentages total 100%");
+            notyf?.Error("Please ensure investment percentages total 100%");
             return isValid;
         }
 

@@ -116,8 +116,16 @@ public class Projection(INotyfService notyf) : PageModel
         Form.Title = Request.Form["Title"].ToString();
         Form.FirstName = Request.Form["FirstName"].ToString();
         Form.LastName = Request.Form["LastName"].ToString();
-        Form.DateOfBirth = DateOnly.Parse(Request.Form["DateOfBirth"].ToString());
-        Form.Investment = decimal.Parse(Request.Form["Investment"].ToString());
+
+        if (DateOnly.TryParse(Request.Form["DateOfBirth"].ToString(), out var dateOfBirth))
+        {
+            Form.DateOfBirth = dateOfBirth;
+        }
+
+        if (decimal.TryParse(Request.Form["Investment"].ToString(), out var investment))
+        {
+            Form.Investment = investment;
+        }
 
         foreach (var fund in Form.SelectedFunds)
         {
