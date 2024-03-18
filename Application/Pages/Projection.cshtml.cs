@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using PageModel = Shared.PageModel;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 public class Projection : PageModel
@@ -68,7 +69,13 @@ public class Projection : PageModel
         Form = this.GetForm();
         this.GetFormData();
 
-        // ...
+        var fundId = Guid.Parse(Request.Form["DeleteFundId"].ToString());
+        var fund = Form.SelectedFunds.Find(fund => fund.Id == fundId);
+
+        Debug.Assert(fund != null, nameof(fund) + " != null");
+        Form.SelectedFunds.Remove(fund);
+        Form.Funds.Add(ConvertFundToSelectListItem(fund));
+        Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
 
         Response.Redirect("/projection");
     }

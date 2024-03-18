@@ -27,7 +27,7 @@
 
 <div class="container-fluid col-xxl-8 px-4 py-5">
     <div class="row flex-lg-row-reverse align-items-left g-0 py-0 rounded-3 border shadow-lg">
-        <form class="p-4 p-md-5" method="POST">
+        <form class="p-4 p-md-5" method="POST" id="ProjectionForm">
             <section>
                 <h2>Personal Details</h2>
                 <div class="form-floating mb-3">
@@ -58,18 +58,23 @@
             <section>
                 <h3>Fund Choices</h3>
                 <div class="form-floating mb-3">
+                    <input type="hidden" id="DeleteFundId" name="DeleteFundId" value=""/>
                     @if (Model.Form.SelectedFunds.Count > 0)
                     {
                         <table class="table">
                             <tr>
                                 <th>Fund Name</th>
                                 <th>Investment Percentage</th>
+                                <th>Remove Fund?</th>
                             </tr>
                             @foreach (var fund in Model.Form.SelectedFunds)
                             {
                                 <tr>
                                     <td>@fund.Name</td>
                                     <td>0.00%</td> <!-- TODO - Implement investment percentages -->
+                                    <td>
+                                        <button class="w-10 btn btn-sm btn-danger" asp-page-handler="DeleteFund" onclick="deleteFundClickHandler(this.value)" value="@fund.Id.ToString()">X</button>
+                                    </td>
                                 </tr>
                             }
                         </table>
@@ -92,3 +97,11 @@
         </form>
     </div>
 </div>
+
+<script>
+    function deleteFundClickHandler(fundId)
+    {
+        document.getElementById('DeleteFundId').value = fundId;
+        document.getElementById('ProjectionForm').submit();
+    }
+</script>
