@@ -2,6 +2,7 @@
 
 using Common;
 using Data;
+using Engine;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Models;
 using Newtonsoft.Json;
@@ -17,10 +18,8 @@ public class Projection : PageModel
     {
         if (!Session.Authenticate(HttpContext.Session, Request, Response)) return;
 
+        CurrentUser = this.GetCurrentUser();
         Form = this.GetForm();
-        CurrentUser =
-            Session.GetObject<User>(HttpContext.Session, SessionVariables.CurrentUser)
-            ?? Models.User.Default();
 
         if (string.IsNullOrEmpty(Form.FirstName)) Form.FirstName = CurrentUser.FirstName ?? string.Empty;
         if (string.IsNullOrEmpty(Form.LastName)) Form.LastName = CurrentUser.LastName ?? string.Empty;
@@ -32,22 +31,41 @@ public class Projection : PageModel
 
     public void OnPost()
     {
+        CurrentUser = this.GetCurrentUser();
         Form = this.GetForm();
         this.GetFormData();
 
         // TODO - Validate inputs (i.e. investment percentages must sum to 100% etc.)
 
-        //var result = Result.Default(); // TODO - Perform calculation and return 'Result'
+        List<Tuple<Guid, decimal>> investmentPercentages = [];
+        investmentPercentages.AddRange(Form.InvestmentPercentages.Select(keyValuePair =>
+            Tuple.Create(keyValuePair.Key, keyValuePair.Value)));
 
-        // TODO - Store 'Result' in database
+        List<Domain.InputData.Fund> funds = [];
+        funds.AddRange(Form.SelectedFunds.Select(fund =>
+            new Domain.InputData.Fund(fund.Id, fund.GrowthRate, fund.Charge)));
 
-        //Session.DeleteObject(HttpContext.Session, SessionVariables.ProjectionFormData);
+        var inputs = new Domain.Inputs(Form.Investment, investmentPercentages, funds);
+        var projectedValue = Calculation.Calculate(inputs);
 
-        //Response.Redirect($"/results?id={result.Id}");
+        var result = new Result
+        {
+            Id = Guid.NewGuid(),
+            UserId = CurrentUser.Id,
+            TotalInvestment = Form.Investment,
+            ProjectedValue = projectedValue
+        };
+
+        DatabaseManager.Database.Create(result);
+
+        Session.DeleteObject(HttpContext.Session, SessionVariables.ProjectionFormData);
+
+        Response.Redirect($"/results?id={result.Id}");
     }
 
     public void OnPostAddFund()
     {
+        CurrentUser = this.GetCurrentUser();
         Form = this.GetForm();
         this.GetFormData();
 
@@ -67,6 +85,7 @@ public class Projection : PageModel
 
     public void OnPostDeleteFund()
     {
+        CurrentUser = this.GetCurrentUser();
         Form = this.GetForm();
         this.GetFormData();
 
@@ -81,10 +100,16 @@ public class Projection : PageModel
         Response.Redirect("/projection");
     }
 
+    private User GetCurrentUser()
+    {
+        return Session.GetObject<User>(HttpContext.Session, SessionVariables.CurrentUser)
+            ?? Models.User.Default();
+    }
+
     private FormData GetForm()
     {
         return Session.GetObject<FormData>(HttpContext.Session, SessionVariables.ProjectionFormData)
-               ?? FormData.Default();
+            ?? FormData.Default();
     }
 
     private void GetFormData()
