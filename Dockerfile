@@ -18,11 +18,15 @@ EXPOSE 5000
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 WORKDIR /src
 COPY ./Application .
+COPY ./Engine ./Engine
 RUN \
+    dotnet restore "/src/Engine/Engine.fsproj" && \
+    dotnet build "/src/Engine/Engine.fsproj" -c Release -o /src/build/engine
     dotnet restore "/src/Application.csproj" && \
     dotnet build "/src/Application.csproj" -c Release -o /src/build
 
 FROM build-env AS publish-env
+RUN dotnet publish "/src/Engine/Engine.fsproj" -c Release -o /src/publish/engine
 RUN dotnet publish "/src/Application.csproj" -c Release -o /src/publish
 
 FROM base-env AS final-env
