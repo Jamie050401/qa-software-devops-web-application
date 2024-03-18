@@ -24,7 +24,7 @@ jobs:
         cache: true
         cache-dependency-path: Application/packages.lock.json
     - name: Restore NuGet packages
-      run: dotnet restore --locked-mode
+      run: dotnet restore
     - name: Build solution
       run: dotnet build
     - name: Run unit tests
