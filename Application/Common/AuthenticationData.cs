@@ -1,5 +1,7 @@
 ﻿namespace Application.Common;
 
+using System;
+
 public class AuthenticationData
 {
     public required string Email { get; init; }

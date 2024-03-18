@@ -1,0 +1,107 @@
+﻿@page "/projection"
+@using Microsoft.AspNetCore.Html
+@model Application.Pages.Projection
+
+@{
+    ViewData["Title"] = "Projection";
+
+    IHtmlContent RenderTitleDropdown()
+    {
+        var options =
+            // No support for raw strings inside of .cshtml files
+            $"<option class=\"dropdown-item rounded-2\" value=\"\" disabled {IsSelected("")}>Title</option>" +
+            $"<option class=\"dropdown-item rounded-2\" value=\"Mr\" {IsSelected("Mr")}>Mr</option>" +
+            $"<option class=\"dropdown-item rounded-2\" value=\"Mrs\" {IsSelected("Mrs")}>Mrs</option>" +
+            $"<option class=\"dropdown-item rounded-2\" value=\"Miss\" {IsSelected("Miss")}>Miss</option>" +
+            $"<option class=\"dropdown-item rounded-2\" value=\"Ms\" {IsSelected("Ms")}>Ms</option>" +
+            $"<option class=\"dropdown-item rounded-2\" value=\"Dr\" {IsSelected("Dr")}>Dr</option>";
+
+        return Html.Raw(options);
+    }
+
+    string IsSelected(string value)
+    {
+        return Model.Form.Title == value ? "selected" : "";
+    }
+}
+
+<div class="container-fluid col-xxl-8 px-4 py-5">
+    <div class="row flex-lg-row-reverse align-items-left g-0 py-0 rounded-3 border shadow-lg">
+        <form class="p-4 p-md-5" method="POST" id="ProjectionForm">
+            <section>
+                <h2>Personal Details</h2>
+                <div class="form-floating mb-3">
+                    <select class="dropdown-menu position-static d-grid gap-1 p-2 rounded-3 mx-0 shadow" data-bs-theme="light" id="Title" name="Title">
+                        @RenderTitleDropdown();
+                    </select>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" id="FirstName" name="FirstName" placeholder="" value="@Model.Form.FirstName">
+                    <label>First Name</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" id="LastName" name="LastName" placeholder="" value="@Model.Form.LastName">
+                    <label>Last Name</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="date" class="form-control" id="DateOfBirth" name="DateOfBirth" value="@Model.Form.GetDateOfBirthAsString()">
+                    <label>Date of Birth</label>
+                </div>
+            </section>
+            <section>
+                <h2>Financial Details</h2>
+                <div class="form-floating mb-3">
+                    <input type="number" min="10000" step="1000" class="form-control" id="Investment" placeholder="" name="Investment" value="@Model.Form.Investment">
+                    <label>Investment (£)</label>
+                </div>
+            </section>
+            <section>
+                <h3>Fund Choices</h3>
+                <div class="form-floating mb-3">
+                    <input type="hidden" id="DeleteFundId" name="DeleteFundId" value=""/>
+                    @if (Model.Form.SelectedFunds.Count > 0)
+                    {
+                        <table class="table">
+                            <tr>
+                                <th>Fund Name</th>
+                                <th>Investment Percentage</th>
+                                <th>Remove Fund?</th>
+                            </tr>
+                            @foreach (var fund in Model.Form.SelectedFunds)
+                            {
+                                <tr>
+                                    <td>@fund.Name</td>
+                                    <td><input type="number" step="5" class="form-control" id="InvestmentPercentage-@fund.Id" placeholder="" name="InvestmentPercentage-@fund.Id" value="@Model.Form.GetInvestmentPercentage(fund.Id)"/></td>
+                                    <td>
+                                        <button class="w-10 btn btn-sm btn-danger" asp-page-handler="DeleteFund" onclick="deleteFundClickHandler(this.value)" value="@fund.Id.ToString()">X</button>
+                                    </td>
+                                </tr>
+                            }
+                        </table>
+                    }
+
+                    @if (Model.Form.Funds.Count > 0)
+                    {
+                        <table>
+                            <tr>
+                                <td><select class="dropdown-menu position-static d-grid gap-1 p-2 rounded-3 mx-0 shadow" data-bs-theme="light" id="SelectedFund" name="SelectedFund" asp-items="Model.Form.Funds"></select></td>
+                                <td><button class="w-10 btn btn-sm btn-primary" asp-page-handler="AddFund" type="submit">Add Fund</button></td>
+                            </tr>
+                        </table>
+                    }
+                </div>
+            </section>
+            <div class="form-floating px-3 py-3">
+                <button class="w-100 btn btn-lg btn-primary" type="submit">Get Projection</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function deleteFundClickHandler(fundId)
+    {
+        document.getElementById('DeleteFundId').value = fundId;
+        document.getElementById('ProjectionForm').submit();
+    }
+</script>

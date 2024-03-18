@@ -12,18 +12,20 @@ public class DashboardModel(INotyfService notyf) : PageModel
         if (!Session.Authenticate(HttpContext.Session, Request, Response)) return;
 
         // ReSharper disable once InvertIf
-        if (Session.GetBoolean(HttpContext.Session, Session.Variables.IsLogin))
+        if (Session.GetBoolean(HttpContext.Session, SessionVariables.IsLogin))
         {
             notyf.Success("Logged in successfully.");
-            Session.SetBoolean(HttpContext.Session, Session.Variables.IsLogin, false);
+            Session.DeleteObject(HttpContext.Session, SessionVariables.IsLogin);
         }
 
-        CurrentUser = Session.GetObject<User>(HttpContext.Session, Session.Variables.CurrentUser);
+        CurrentUser =
+            Session.GetObject<User>(HttpContext.Session, SessionVariables.CurrentUser)
+            ?? Models.User.Default();
     }
 
     public void OnPostProjection()
     {
-        // ...
+        Response.Redirect("/projection");
     }
 
     public void OnPostResults()
@@ -31,5 +33,5 @@ public class DashboardModel(INotyfService notyf) : PageModel
         // ...
     }
 
-    public User? CurrentUser { get; private set; }
+    public User CurrentUser { get; private set; } = Models.User.Default();
 }

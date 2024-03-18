@@ -2,26 +2,27 @@
 
 using Data;
 using ILogger = Serilog.ILogger;
+using Microsoft.AspNetCore.Http;
 using Models;
 using Newtonsoft.Json;
+using System;
 using System.Diagnostics;
+
+public struct SessionVariables
+{
+    public const string CurrentUser = "CurrentUser";
+    public const string HasLoggedIn = "HasLoggedIn";
+    public const string IsLoggedIn = "IsLoggedIn";
+    public const string IsLogin = "IsLogin";
+    public const string IsLogout = "IsLogout";
+    public const string LoginFormData = "LoginFormData";
+    public const string ProjectionFormData = "ProjectionFormData";
+    public const string RegistrationFormData = "RegistrationFormData";
+    public const string RegistrationSwitch = "RegistrationSwitch";
+}
 
 public static class Session
 {
-    public struct Variables
-    {
-        public const string HasLoggedIn = "HasLoggedIn";
-        public const string IsLoggedIn = "IsLoggedIn";
-        public const string IsLogin = "IsLogin";
-        public const string IsLogout = "IsLogout";
-        public const string CurrentUser = "CurrentUser";
-    }
-
-    public static bool HasValue(ISession session, string key)
-    {
-        return session.TryGetValue(key, out _);
-    }
-
     public static bool GetBoolean(ISession session, string key)
     {
         return session.TryGetValue(key, out var boolean) && BitConverter.ToBoolean(boolean);
@@ -30,16 +31,6 @@ public static class Session
     public static void SetBoolean(ISession session, string key, bool value)
     {
         session.Set(key, BitConverter.GetBytes(value));
-    }
-
-    public static string GetString(ISession session, string key)
-    {
-        return session.GetString(key) ?? "";
-    }
-
-    public static void SetString(ISession session, string key, string value)
-    {
-        session.SetString(key, value);
     }
 
     public static void DeleteObject(ISession session, string key)
@@ -61,17 +52,17 @@ public static class Session
 
     public static bool Authenticate(ISession session, HttpRequest request, HttpResponse response)
     {
-        if (!HasValue(session, Variables.HasLoggedIn))
+        if (!HasValue(session, SessionVariables.HasLoggedIn))
         {
             var cookieResponse = Cookie.Retrieve<bool>(request, Cookies.HasLoggedIn);
             if (cookieResponse.Status is ResponseStatus.Success && cookieResponse.HasValue)
             {
-                SetBoolean(session, Variables.HasLoggedIn, cookieResponse.Value);
+                SetBoolean(session, SessionVariables.HasLoggedIn, cookieResponse.Value);
             }
         }
 
-        var isLoggedIn = GetBoolean(session, Variables.IsLoggedIn);
-        var hasLoggedIn = GetBoolean(session, Variables.HasLoggedIn);
+        var isLoggedIn = GetBoolean(session, SessionVariables.IsLoggedIn);
+        var hasLoggedIn = GetBoolean(session, SessionVariables.HasLoggedIn);
 
         if (isLoggedIn)
         {
@@ -90,17 +81,18 @@ public static class Session
 
     public static bool Redirect(ISession session, HttpRequest request, HttpResponse response)
     {
-        if (!HasValue(session, Variables.HasLoggedIn))
+        if (!HasValue(session, SessionVariables.HasLoggedIn))
         {
             var cookieResponse = Cookie.Retrieve<bool>(request, Cookies.HasLoggedIn);
             if (cookieResponse.Status is ResponseStatus.Success && cookieResponse.HasValue)
             {
-                SetBoolean(session, Variables.HasLoggedIn, cookieResponse.Value);
+                SetBoolean(session, SessionVariables.HasLoggedIn, cookieResponse.Value);
             }
         }
 
-        var isLoggedIn = GetBoolean(session, Variables.IsLoggedIn);
-        var hasLoggedIn = GetBoolean(session, Variables.HasLoggedIn);
+        var isLoggedIn = GetBoolean(session, SessionVariables.IsLoggedIn);
+        var hasLoggedIn = GetBoolean(session, SessionVariables.HasLoggedIn);
+        var isRegistrationSwitch = GetBoolean(session, SessionVariables.RegistrationSwitch);
 
         if (isLoggedIn)
         {
@@ -109,7 +101,7 @@ public static class Session
         }
 
         // ReSharper disable once InvertIf
-        if (hasLoggedIn && request.Path.Value == "/register")
+        if (hasLoggedIn && !isRegistrationSwitch && request.Path.Value == "/register")
         {
             response.Redirect("/login", true);
             return true;
@@ -120,13 +112,13 @@ public static class Session
 
     // TODO - Implement logic to regenerate the token everytime it is used?
     // TODO - Implement support for multiple cookies per user (i.e. 1 per device)
-    public static void Login(ILogger logger, ISession session, HttpRequest request, HttpResponse response)
+    public static bool TryCookieLogin(ILogger logger, ISession session, HttpRequest request, HttpResponse response)
     {
         var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, Cookies.AuthenticationData);
         if (cookieResponse.Status is ResponseStatus.Error || !cookieResponse.HasValue)
         {
             logger.Information("Login failure: unable to retrieve authentication data from cookies");
-            return;
+            return false;
         }
         Debug.Assert(cookieResponse.Value != null, "cookieResponse.Value != null");
         var authenticationData = cookieResponse.Value;
@@ -136,7 +128,7 @@ public static class Session
         {
             logger.Information("Login failure: unable to find user matching authentication data stored in cookies");
             Cookie.Remove(response, Cookies.AuthenticationData);
-            return;
+            return false;
         }
         Debug.Assert(dbResponse.Value != null, "databaseResponse.Value != null");
         var userInDb = (User)dbResponse.Value;
@@ -151,14 +143,16 @@ public static class Session
         if (!isAuthenticated)
         {
             Cookie.Remove(response, Cookies.AuthenticationData);
-            return;
+            return false;
         }
 
-        SetBoolean(session, Variables.IsLoggedIn, true);
-        SetBoolean(session, Variables.HasLoggedIn, true);
-        SetBoolean(session, Variables.IsLogin, true);
-        SetObject(session, Variables.CurrentUser, userInDb);
+        SetBoolean(session, SessionVariables.IsLoggedIn, true);
+        SetBoolean(session, SessionVariables.HasLoggedIn, true);
+        SetBoolean(session, SessionVariables.IsLogin, true);
+        SetObject(session, SessionVariables.CurrentUser, userInDb);
+        DeleteObject(session, SessionVariables.RegistrationSwitch);
         response.Redirect("/dashboard", true);
+        return true;
     }
 
     public static void Login(ISession session, ConnectionInfo connectionInfo, HttpRequest request, HttpResponse response, bool hasRememberMe, string email, User userInDb)
@@ -187,11 +181,12 @@ public static class Session
             }
         }
 
-        SetBoolean(session, Variables.IsLoggedIn, true);
-        SetBoolean(session, Variables.HasLoggedIn, true);
+        SetBoolean(session, SessionVariables.IsLoggedIn, true);
+        SetBoolean(session, SessionVariables.HasLoggedIn, true);
         Cookie.Store(response, Cookies.HasLoggedIn, true, DateTimeOffset.UtcNow.AddDays(90), true);
-        SetBoolean(session, Variables.IsLogin, true);
-        SetObject(session, Variables.CurrentUser, userInDb);
+        SetBoolean(session, SessionVariables.IsLogin, true);
+        SetObject(session, SessionVariables.CurrentUser, userInDb);
+        DeleteObject(session, SessionVariables.RegistrationSwitch);
         response.Redirect("/dashboard", true);
     }
 
@@ -199,9 +194,24 @@ public static class Session
     {
         Cookie.Remove(response, Cookies.AuthenticationData);
 
-        SetBoolean(session, Variables.IsLogout, true);
-        SetBoolean(session, Variables.IsLoggedIn, false);
-        DeleteObject(session, Variables.CurrentUser);
+        SetBoolean(session, SessionVariables.IsLogout, true);
+        DeleteObject(session, SessionVariables.IsLoggedIn);
+        DeleteObject(session, SessionVariables.CurrentUser);
         response.Redirect("/login", true);
+    }
+
+    private static bool HasValue(ISession session, string key)
+    {
+        return session.TryGetValue(key, out _);
+    }
+
+    private static string GetString(ISession session, string key)
+    {
+        return session.GetString(key) ?? "";
+    }
+
+    private static void SetString(ISession session, string key, string value)
+    {
+        session.SetString(key, value);
     }
 }

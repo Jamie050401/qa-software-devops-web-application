@@ -1,6 +1,8 @@
 ﻿namespace Application.Common;
 
 using AspNetCoreHero.ToastNotification.Abstractions;
+using Pages;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 public static partial class Validate
@@ -36,6 +38,41 @@ public static partial class Validate
         if (!isValid)
         {
             notyf?.Error("Password cannot exceed 40 characters.");
+            return isValid;
+        }
+
+        return isValid;
+    }
+
+    // TODO - Add unit tests
+    public static bool ProjectionFormData(INotyfService? notyf, Projection.FormData form)
+    {
+        var isValid = form.FirstName.Length is > 0 and < 41;
+        if (!isValid)
+        {
+            notyf?.Error("Please ensure First Name is valid and less than 41 characters");
+            return isValid;
+        }
+
+        isValid = form.LastName.Length is > 0 and < 41;
+        if (!isValid)
+        {
+            notyf?.Error("Please ensure Last Name is valid and less than 41 characters");
+            return isValid;
+        }
+
+        isValid = form.Investment >= 10000.0M;
+        if (!isValid)
+        {
+            notyf?.Error("Investment must be at least £10,000.0");
+            return isValid;
+        }
+
+        isValid = form.InvestmentPercentages.Sum(investmentPercentage => investmentPercentage.Value) == 100.0M;
+        // ReSharper disable once InvertIf
+        if (!isValid)
+        {
+            notyf?.Error("Please ensure Investment Percentages total 100%");
             return isValid;
         }
 

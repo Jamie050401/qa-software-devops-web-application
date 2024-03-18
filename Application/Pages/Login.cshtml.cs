@@ -12,53 +12,87 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
 {
     public void OnGet()
     {
-        if (Session.GetBoolean(HttpContext.Session, Session.Variables.IsLogout))
+        if (Session.GetBoolean(HttpContext.Session, SessionVariables.IsLogout))
         {
             notyf.Success("Logged out successfully.");
-            Session.SetBoolean(HttpContext.Session, Session.Variables.IsLogout, false);
+            Session.DeleteObject(HttpContext.Session, SessionVariables.IsLogout);
         }
 
         if (Session.Redirect(HttpContext.Session, Request, Response)) return;
-        Session.Login(logger, HttpContext.Session, Request, Response);
+        if (Session.TryCookieLogin(logger, HttpContext.Session, Request, Response)) return;
+
+        Form = this.GetForm();
     }
 
     public void OnPost()
     {
-        var email = Request.Form["email"].ToString();
-        var password = Request.Form["password"].ToString();
-        var hasRememberMe = bool.TryParse(Request.Form["remember-me"].ToString(), out var isRemembered) && isRemembered;
+        Form = this.GetForm();
+        this.GetFormData();
 
-        var isEmailValid = Validate.Email(notyf, email);
+        var isEmailValid = Validate.Email(notyf, Form.Email); // TODO - Validate maximum length of email
         if (!isEmailValid) return;
 
-        var dbResponse = DatabaseManager.Database.Read(Models.User.GetProperty("Email"), email);
+        // TODO - Validate maximum length of password
+
+        var dbResponse = DatabaseManager.Database.Read(Models.User.GetProperty("Email"), Form.Email);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
             notyf.Error("Email or password was incorrect, please try again.");
-            logger.Information($"Login failure: {email} not found in database.");
+            logger.Information($"Login failure: {Form.Email} not found in database.");
             return;
         }
 
         Debug.Assert(dbResponse.Value != null, "dbResponse.Value != null");
         var userInDb = (User)dbResponse.Value;
         Debug.Assert(userInDb.Password != null, "userInDb.Password != null");
-        if (email != userInDb.Email || !Secret.Verify(password, userInDb.Password))
+        if (Form.Email != userInDb.Email || !Secret.Verify(Form.Password, userInDb.Password))
         {
             notyf.Error("Email or password was incorrect, please try again.");
             logger.Information("Login failure: supplied password does not match stored password hash.");
             return;
         }
 
-        Session.Login(HttpContext.Session, HttpContext.Connection, Request, Response, hasRememberMe, email, userInDb);
+        Session.DeleteObject(HttpContext.Session, SessionVariables.LoginFormData);
+        Session.Login(HttpContext.Session, HttpContext.Connection, Request, Response, Form.RememberMe, Form.Email, userInDb);
     }
 
     public void OnPostSwitch()
     {
-        if (Session.GetBoolean(HttpContext.Session, Session.Variables.HasLoggedIn))
-        {
-            Session.SetBoolean(HttpContext.Session, Session.Variables.HasLoggedIn, false);
-        }
+        Session.SetBoolean(HttpContext.Session, SessionVariables.RegistrationSwitch, true);
+        Session.DeleteObject(HttpContext.Session, SessionVariables.LoginFormData);
 
         Response.Redirect("/register");
     }
+
+    private FormData GetForm()
+    {
+        return Session.GetObject<FormData>(HttpContext.Session, SessionVariables.LoginFormData)
+               ?? FormData.Default();
+    }
+
+    private void GetFormData()
+    {
+        Form.Email = Request.Form["Email"].ToString();
+        Form.Password = Request.Form["Password"].ToString();
+        Form.RememberMe = bool.TryParse(Request.Form["RememberMe"].ToString(), out var hasRememberMe) && hasRememberMe;
+    }
+
+    public class FormData
+    {
+        public static FormData Default()
+        {
+            return new FormData
+            {
+                Email = string.Empty,
+                Password = string.Empty,
+                RememberMe = false
+            };
+        }
+
+        public required string Email { get; set; }
+        public required string Password { get; set; }
+        public required bool RememberMe { get; set; }
+    }
+
+    public FormData Form { get; private set; } = FormData.Default();
 }

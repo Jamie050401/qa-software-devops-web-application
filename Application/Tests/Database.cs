@@ -4,6 +4,8 @@ using Common;
 using DatabaseLogic = Data.Database;
 using NUnit.Framework;
 using Models;
+using System;
+using System.IO;
 
 [TestFixture]
 public class DatabaseCreate
