@@ -75,10 +75,14 @@
                         </table>
                     }
 
-                    @if (Model.Form.Funds.Count is not 0)
+                    @if (Model.Form.Funds.Count > 0)
                     {
-                        <select class="dropdown-menu position-static d-grid gap-1 p-2 rounded-3 mx-0 shadow" data-bs-theme="light" id="SelectedFund" name="SelectedFund" asp-items="Model.Form.Funds"></select>
-                        <button class="w-10 btn btn-sm btn-primary" asp-page-handler="AddFund" type="submit">Add Fund</button>
+                        <table>
+                            <tr>
+                                <td><select class="dropdown-menu position-static d-grid gap-1 p-2 rounded-3 mx-0 shadow" data-bs-theme="light" id="SelectedFund" name="SelectedFund" asp-items="Model.Form.Funds"></select></td>
+                                <td><button class="w-10 btn btn-sm btn-primary" asp-page-handler="AddFund" type="submit">Add Fund</button></td>
+                            </tr>
+                        </table>
                     }
                 </div>
             </section>
