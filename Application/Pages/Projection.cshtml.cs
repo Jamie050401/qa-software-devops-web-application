@@ -1,5 +1,6 @@
 ﻿namespace Application.Pages;
 
+using AspNetCoreHero.ToastNotification.Abstractions;
 using Common;
 using Data;
 using Engine;
@@ -12,7 +13,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-public class Projection : PageModel
+public class Projection(INotyfService notyf) : PageModel
 {
     public void OnGet()
     {
@@ -35,7 +36,9 @@ public class Projection : PageModel
         Form = this.GetForm();
         this.GetFormData();
 
-        // TODO - Validate inputs (i.e. investment percentages must sum to 100% etc.)
+        var isValid = Validate.ProjectionFormData(notyf, Form);
+        if (!isValid)
+            return;
 
         List<Tuple<Guid, decimal>> investmentPercentages = [];
         investmentPercentages.AddRange(Form.InvestmentPercentages.Select(keyValuePair =>
@@ -57,7 +60,6 @@ public class Projection : PageModel
         };
 
         DatabaseManager.Database.Create(result);
-
         Session.DeleteObject(HttpContext.Session, SessionVariables.ProjectionFormData);
 
         Response.Redirect($"/results?id={result.Id}");
@@ -71,10 +73,7 @@ public class Projection : PageModel
 
         var fund = JsonConvert.DeserializeObject<Fund>(Request.Form["SelectedFund"].ToString());
         if (fund is null)
-        {
-            Response.Redirect("/projection");
             return;
-        }
 
         Form.SelectedFunds.Add(fund);
         Form.Funds = Form.Funds.Where(element => element.Text != fund.Name).ToList();
@@ -176,8 +175,8 @@ public class Projection : PageModel
         public required DateOnly DateOfBirth { get; set; }
         public required decimal Investment { get; set; }
         public required List<SelectListItem> Funds { get; set; }
-        public required List<Fund> SelectedFunds { get; set; }
-        public required Dictionary<Guid, decimal> InvestmentPercentages { get; set; }
+        public required List<Fund> SelectedFunds { get; init; }
+        public required Dictionary<Guid, decimal> InvestmentPercentages { get; init; }
     }
 
     public User CurrentUser { get; private set; } = Models.User.Default();
