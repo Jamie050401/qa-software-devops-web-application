@@ -23,7 +23,7 @@ public class Projection : PageModel
 
         if (string.IsNullOrEmpty(Form.FirstName)) Form.FirstName = CurrentUser.FirstName ?? string.Empty;
         if (string.IsNullOrEmpty(Form.LastName)) Form.LastName = CurrentUser.LastName ?? string.Empty;
-        Form.Funds = Form.Funds.Count is 0
+        Form.Funds = Form.Funds.Count is 0 && Form.SelectedFunds.Count is 0
             ? DatabaseManager.Database.ReadAll<Fund>().Value?.Select(ConvertFundToSelectListItem).ToList() ?? []
             : Form.Funds;
         Form.SelectedFunds = Form.SelectedFunds;
