@@ -1,14 +1,16 @@
 ﻿namespace Application.Pages.Shared;
 
+using Microsoft.AspNetCore.Mvc;
+
 public class PageModel : Microsoft.AspNetCore.Mvc.RazorPages.PageModel
 {
-    public void OnPostDashboard()
+    public IActionResult OnPostDashboard()
     {
-        Response.Redirect("/dashboard");
+        return this.RedirectToPage("/dashboard");
     }
 
-    public void OnPostLogout()
+    public IActionResult OnPostLogout()
     {
-        Response.Redirect("/logout");
+        return this.RedirectToPage("/logout");
     }
 }

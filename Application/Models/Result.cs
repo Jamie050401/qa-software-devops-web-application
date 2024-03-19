@@ -11,7 +11,8 @@ public class Result : ModelBase<Result>
             Id = Guid.Empty,
             UserId = Guid.Empty,
             TotalInvestment = 0.0M,
-            ProjectedValue = 0.0M
+            ProjectedValue = 0.0M,
+            ProjectionDate = DateTime.UtcNow
         };
     }
 
@@ -23,4 +24,6 @@ public class Result : ModelBase<Result>
     public required decimal TotalInvestment { get; init; }
     [NonNullable]
     public required decimal ProjectedValue { get; init; }
+    [NonNullable]
+    public required DateTime ProjectionDate { get; init; }
 }

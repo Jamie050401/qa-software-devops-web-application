@@ -4,6 +4,7 @@ using AspNetCoreHero.ToastNotification.Abstractions;
 using Common;
 using Data;
 using Engine;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Models;
 using Newtonsoft.Json;
@@ -19,7 +20,7 @@ public class Projection(INotyfService notyf) : PageModel
     {
         if (!Session.Authenticate(HttpContext.Session, Request, Response)) return;
 
-        CurrentUser = this.GetCurrentUser();
+        CurrentUser = Session.GetCurrentUser(HttpContext.Session);
         Form = this.GetForm();
 
         if (string.IsNullOrEmpty(Form.FirstName)) Form.FirstName = CurrentUser.FirstName ?? string.Empty;
@@ -30,15 +31,18 @@ public class Projection(INotyfService notyf) : PageModel
         Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
     }
 
-    public void OnPost()
+    public IActionResult OnPost()
     {
-        CurrentUser = this.GetCurrentUser();
+        CurrentUser = Session.GetCurrentUser(HttpContext.Session);
         Form = this.GetForm();
         this.GetFormData();
 
         var isValid = Validate.ProjectionFormData(notyf, Form);
         if (!isValid)
-            return;
+        {
+            Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
+            return this.RedirectToPage("/projection");
+        }
 
         List<Tuple<Guid, decimal>> investmentPercentages = [];
         investmentPercentages.AddRange(Form.InvestmentPercentages.Select(keyValuePair =>
@@ -56,35 +60,45 @@ public class Projection(INotyfService notyf) : PageModel
             Id = Guid.NewGuid(),
             UserId = CurrentUser.Id,
             TotalInvestment = Form.Investment,
-            ProjectedValue = projectedValue
+            ProjectedValue = projectedValue,
+            ProjectionDate = DateTime.UtcNow
         };
 
-        DatabaseManager.Database.Create(result);
+        var dbResponse = DatabaseManager.Database.Create(result);
+        if (dbResponse.Status is ResponseStatus.Error)
+        {
+            Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
+            notyf.Error("Failed to save projection.");
+            return this.RedirectToPage("/projection");
+        }
         Session.DeleteObject(HttpContext.Session, SessionVariables.ProjectionFormData);
 
-        Response.Redirect($"/results?id={result.Id}");
+        return this.RedirectToPage("/results", new { id = result.Id });
     }
 
-    public void OnPostAddFund()
+    public IActionResult OnPostAddFund()
     {
-        CurrentUser = this.GetCurrentUser();
+        CurrentUser = Session.GetCurrentUser(HttpContext.Session);
         Form = this.GetForm();
         this.GetFormData();
 
         var fund = JsonConvert.DeserializeObject<Fund>(Request.Form["SelectedFund"].ToString());
         if (fund is null)
-            return;
+        {
+            notyf.Error("Failed to add selected fund.");
+            return new EmptyResult();
+        }
 
         Form.SelectedFunds.Add(fund);
         Form.Funds = Form.Funds.Where(element => element.Text != fund.Name).ToList();
         Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
 
-        Response.Redirect("/projection");
+        return this.RedirectToPage("/projection");
     }
 
-    public void OnPostDeleteFund()
+    public IActionResult OnPostDeleteFund()
     {
-        CurrentUser = this.GetCurrentUser();
+        CurrentUser = Session.GetCurrentUser(HttpContext.Session);
         Form = this.GetForm();
         this.GetFormData();
 
@@ -96,13 +110,7 @@ public class Projection(INotyfService notyf) : PageModel
         Form.Funds.Add(ConvertFundToSelectListItem(fund));
         Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
 
-        Response.Redirect("/projection");
-    }
-
-    private User GetCurrentUser()
-    {
-        return Session.GetObject<User>(HttpContext.Session, SessionVariables.CurrentUser)
-            ?? Models.User.Default();
+        return this.RedirectToPage("/projection");
     }
 
     private FormData GetForm()
@@ -116,8 +124,16 @@ public class Projection(INotyfService notyf) : PageModel
         Form.Title = Request.Form["Title"].ToString();
         Form.FirstName = Request.Form["FirstName"].ToString();
         Form.LastName = Request.Form["LastName"].ToString();
-        Form.DateOfBirth = DateOnly.Parse(Request.Form["DateOfBirth"].ToString());
-        Form.Investment = decimal.Parse(Request.Form["Investment"].ToString());
+
+        if (DateOnly.TryParse(Request.Form["DateOfBirth"].ToString(), out var dateOfBirth))
+        {
+            Form.DateOfBirth = dateOfBirth;
+        }
+
+        if (decimal.TryParse(Request.Form["Investment"].ToString(), out var investment))
+        {
+            Form.Investment = investment;
+        }
 
         foreach (var fund in Form.SelectedFunds)
         {

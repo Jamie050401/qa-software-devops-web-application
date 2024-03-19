@@ -286,6 +286,7 @@ public class Database
                 break;
             case string:
             case Guid:
+            case DateTime:
                 propertyValue = $"\"{propertyValue}\"";
                 break;
             case AuthenticationData:
@@ -365,8 +366,8 @@ public class Database
                 if (indexAttribute is not null)
                 {
                     indexesSql = indexesSql == ""
-                        ? $"CREATE UNIQUE INDEX IF NOT EXISTS idx_{property.Name} on {tableName}({property.Name});"
-                        : $"{indexesSql} CREATE UNIQUE INDEX IF NOT EXISTS idx_{property.Name} on {tableName}({property.Name});";
+                        ? $"CREATE INDEX IF NOT EXISTS idx_{tableName}{property.Name} on {tableName}({property.Name});"
+                        : $"{indexesSql} CREATE INDEX IF NOT EXISTS idx_{property.Name} on {tableName}({property.Name});";
                 }
             }
             tablesSql = tablesSql == ""

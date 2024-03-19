@@ -25,14 +25,23 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
         this.GetFormData();
 
         var isEmailValid = Validate.Email(notyf, Form.Email);
-        if (!isEmailValid) return;
+        if (!isEmailValid)
+        {
+            Session.SetObject(HttpContext.Session, SessionVariables.RegistrationFormData, Form);
+            return;
+        }
 
         var isPasswordValid = Validate.Password(notyf, Form.PasswordFirst, Form.PasswordSecond);
-        if (!isPasswordValid) return;
+        if (!isPasswordValid)
+        {
+            Session.SetObject(HttpContext.Session, SessionVariables.RegistrationFormData, Form);
+            return;
+        }
 
         var dbResponse = DatabaseManager.Database.Read(Role.GetProperty("Name"), "Default");
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
+            Session.SetObject(HttpContext.Session, SessionVariables.RegistrationFormData, Form);
             notyf.Error("Failed to register user.");
             logger.Information("Registration failure: unable to retrieve default role");
             return;
@@ -54,6 +63,7 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
         dbResponse = DatabaseManager.Database.Create(user);
         if (dbResponse.Status is ResponseStatus.Error)
         {
+            Session.SetObject(HttpContext.Session, SessionVariables.RegistrationFormData, Form);
             notyf.Error("Failed to register user.");
             logger.Information("Registration failure: unable to add user to database");
             return;
