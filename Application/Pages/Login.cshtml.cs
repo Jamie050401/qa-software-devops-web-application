@@ -29,14 +29,17 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         Form = this.GetForm();
         this.GetFormData();
 
-        var isEmailValid = Validate.Email(notyf, Form.Email); // TODO - Validate maximum length of email
-        if (!isEmailValid) return;
-
-        // TODO - Validate maximum length of password
+        var isEmailValid = Validate.Email(notyf, Form.Email);
+        if (!isEmailValid)
+        {
+            Session.SetObject(HttpContext.Session, SessionVariables.LoginFormData, Form);
+            return;
+        }
 
         var dbResponse = DatabaseManager.Database.Read(Models.User.GetProperty("Email"), Form.Email);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
+            Session.SetObject(HttpContext.Session, SessionVariables.LoginFormData, Form);
             notyf.Error("Email or password was incorrect, please try again.");
             logger.Information($"Login failure: {Form.Email} not found in database.");
             return;
@@ -47,6 +50,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         Debug.Assert(userInDb.Password != null, "userInDb.Password != null");
         if (Form.Email != userInDb.Email || !Secret.Verify(Form.Password, userInDb.Password))
         {
+            Session.SetObject(HttpContext.Session, SessionVariables.LoginFormData, Form);
             notyf.Error("Email or password was incorrect, please try again.");
             logger.Information("Login failure: supplied password does not match stored password hash.");
             return;

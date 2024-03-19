@@ -39,7 +39,10 @@ public class Projection(INotyfService notyf) : PageModel
 
         var isValid = Validate.ProjectionFormData(notyf, Form);
         if (!isValid)
-            return new EmptyResult();
+        {
+            Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
+            return this.RedirectToPage("/projection");
+        }
 
         List<Tuple<Guid, decimal>> investmentPercentages = [];
         investmentPercentages.AddRange(Form.InvestmentPercentages.Select(keyValuePair =>
@@ -60,10 +63,16 @@ public class Projection(INotyfService notyf) : PageModel
             ProjectedValue = projectedValue
         };
 
-        DatabaseManager.Database.Create(result);
+        var dbResponse = DatabaseManager.Database.Create(result);
+        if (dbResponse.Status is ResponseStatus.Error)
+        {
+            Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
+            notyf.Error("Failed to save projection.");
+            return this.RedirectToPage("/projection");
+        }
         Session.DeleteObject(HttpContext.Session, SessionVariables.ProjectionFormData);
 
-        return this.RedirectToPage("/results", "Result", new { id = result.Id });
+        return this.RedirectToPage("/results", new { id = result.Id });
     }
 
     public IActionResult OnPostAddFund()
@@ -75,7 +84,7 @@ public class Projection(INotyfService notyf) : PageModel
         var fund = JsonConvert.DeserializeObject<Fund>(Request.Form["SelectedFund"].ToString());
         if (fund is null)
         {
-            notyf.Error("Failed to add selected fund");
+            notyf.Error("Failed to add selected fund.");
             return new EmptyResult();
         }
 
