@@ -14,6 +14,14 @@ let Calculate (inputs : Inputs) =
         / 10.0 ** precision
         |> negate number
 
+    let roundToSignificantFigures (precision : int) number =
+        match number = 0.0 with
+        | true ->
+            number
+        | false ->
+            let scale = 10.0 ** floor (log10 (abs number) + 1.0)
+            scale * round precision (number / scale)
+
     let funds = inputs.Funds |>  Array.ofSeq
     let investmentPercentages = inputs.InvestmentPercentages |> Array.ofSeq |> Dictionary
 
@@ -35,5 +43,5 @@ let Calculate (inputs : Inputs) =
             fundValue * decimal ((1.0 + float fund.GrowthRate) ** (float days / 365.25)) * decimal ((1.0 - float fund.Charge) ** (float days / 365.25)))))
     |> Array.sum
     |> float
-    |> round 2
+    |> roundToSignificantFigures 3
     |> decimal
