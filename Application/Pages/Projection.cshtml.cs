@@ -4,6 +4,7 @@ using AspNetCoreHero.ToastNotification.Abstractions;
 using Common;
 using Data;
 using Engine;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Models;
 using Newtonsoft.Json;
@@ -30,7 +31,7 @@ public class Projection(INotyfService notyf) : PageModel
         Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
     }
 
-    public void OnPost()
+    public IActionResult OnPost()
     {
         CurrentUser = Session.GetCurrentUser(HttpContext.Session);
         Form = this.GetForm();
@@ -38,7 +39,7 @@ public class Projection(INotyfService notyf) : PageModel
 
         var isValid = Validate.ProjectionFormData(notyf, Form);
         if (!isValid)
-            return;
+            return new EmptyResult();
 
         List<Tuple<Guid, decimal>> investmentPercentages = [];
         investmentPercentages.AddRange(Form.InvestmentPercentages.Select(keyValuePair =>
@@ -62,10 +63,10 @@ public class Projection(INotyfService notyf) : PageModel
         DatabaseManager.Database.Create(result);
         Session.DeleteObject(HttpContext.Session, SessionVariables.ProjectionFormData);
 
-        Response.Redirect($"/results?id={result.Id}");
+        return this.RedirectToPage("/results", "Result", new { id = result.Id });
     }
 
-    public void OnPostAddFund()
+    public IActionResult OnPostAddFund()
     {
         CurrentUser = Session.GetCurrentUser(HttpContext.Session);
         Form = this.GetForm();
@@ -73,16 +74,19 @@ public class Projection(INotyfService notyf) : PageModel
 
         var fund = JsonConvert.DeserializeObject<Fund>(Request.Form["SelectedFund"].ToString());
         if (fund is null)
-            return;
+        {
+            notyf.Error("Failed to add selected fund");
+            return new EmptyResult();
+        }
 
         Form.SelectedFunds.Add(fund);
         Form.Funds = Form.Funds.Where(element => element.Text != fund.Name).ToList();
         Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
 
-        Response.Redirect("/projection");
+        return this.RedirectToPage("/projection");
     }
 
-    public void OnPostDeleteFund()
+    public IActionResult OnPostDeleteFund()
     {
         CurrentUser = Session.GetCurrentUser(HttpContext.Session);
         Form = this.GetForm();
@@ -96,7 +100,7 @@ public class Projection(INotyfService notyf) : PageModel
         Form.Funds.Add(ConvertFundToSelectListItem(fund));
         Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
 
-        Response.Redirect("/projection");
+        return this.RedirectToPage("/projection");
     }
 
     private FormData GetForm()

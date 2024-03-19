@@ -18,9 +18,7 @@ public class DashboardModel(INotyfService notyf) : PageModel
             Session.DeleteObject(HttpContext.Session, SessionVariables.IsLogin);
         }
 
-        CurrentUser =
-            Session.GetObject<User>(HttpContext.Session, SessionVariables.CurrentUser)
-            ?? Models.User.Default();
+        CurrentUser = Session.GetCurrentUser(HttpContext.Session);
     }
 
     public void OnPostProjection()
@@ -30,7 +28,7 @@ public class DashboardModel(INotyfService notyf) : PageModel
 
     public void OnPostResults()
     {
-        // ...
+        Response.Redirect("/results");
     }
 
     public User CurrentUser { get; private set; } = Models.User.Default();
