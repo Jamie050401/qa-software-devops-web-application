@@ -19,10 +19,17 @@ public struct SessionVariables
     public const string ProjectionFormData = "ProjectionFormData";
     public const string RegistrationFormData = "RegistrationFormData";
     public const string RegistrationSwitch = "RegistrationSwitch";
+    public const string Result = "Result";
+    public const string Results = "Results";
 }
 
 public static class Session
 {
+    public static bool HasValue(ISession session, string key)
+    {
+        return session.TryGetValue(key, out _);
+    }
+
     public static bool GetBoolean(ISession session, string key)
     {
         return session.TryGetValue(key, out var boolean) && BitConverter.ToBoolean(boolean);
@@ -204,11 +211,6 @@ public static class Session
         DeleteObject(session, SessionVariables.IsLoggedIn);
         DeleteObject(session, SessionVariables.CurrentUser);
         response.Redirect("/login", true);
-    }
-
-    private static bool HasValue(ISession session, string key)
-    {
-        return session.TryGetValue(key, out _);
     }
 
     private static string GetString(ISession session, string key)

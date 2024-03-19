@@ -60,7 +60,8 @@ public class Projection(INotyfService notyf) : PageModel
             Id = Guid.NewGuid(),
             UserId = CurrentUser.Id,
             TotalInvestment = Form.Investment,
-            ProjectedValue = projectedValue
+            ProjectedValue = projectedValue,
+            ProjectionDate = DateTime.UtcNow
         };
 
         var dbResponse = DatabaseManager.Database.Create(result);

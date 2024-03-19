@@ -286,6 +286,7 @@ public class Database
                 break;
             case string:
             case Guid:
+            case DateTime:
                 propertyValue = $"\"{propertyValue}\"";
                 break;
             case AuthenticationData:

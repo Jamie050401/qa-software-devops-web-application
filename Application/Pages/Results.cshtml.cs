@@ -3,6 +3,7 @@
 using AspNetCoreHero.ToastNotification.Abstractions;
 using Common;
 using Data;
+using Microsoft.AspNetCore.Mvc;
 using Models;
 using PageModel = Shared.PageModel;
 using System;
@@ -18,7 +19,35 @@ public class Results(INotyfService notyf) : PageModel
             return;
 
         CurrentUser = Session.GetCurrentUser(HttpContext.Session);
+        this.GetUserResults(id);
+    }
 
+    public IActionResult OnPost()
+    {
+        CurrentUser = Session.GetCurrentUser(HttpContext.Session);
+        UserResults = this.GetUserResults();
+        UserResult = this.GetUserResult();
+
+        var resultId = Guid.Parse(Request.Form["DeleteResultId"].ToString());
+        DatabaseManager.Database.Delete(Result.GetProperty("Id"), resultId);
+        this.GetUserResults(null);
+
+        return this.RedirectToPage("/results");
+    }
+
+    private List<Result> GetUserResults()
+    {
+        return Session.GetObject<List<Result>>(HttpContext.Session, SessionVariables.Results)
+            ?? [];
+    }
+
+    private Guid? GetUserResult()
+    {
+        return Session.GetObject<Guid?>(HttpContext.Session, SessionVariables.Result);
+    }
+
+    private void GetUserResults(Guid? id)
+    {
         var dbResponse = DatabaseManager.Database.ReadAll<Result>();
         if (dbResponse.Status is ResponseStatus.Success && dbResponse.HasValue)
         {
@@ -33,16 +62,23 @@ public class Results(INotyfService notyf) : PageModel
 
             if (result?.UserId == CurrentUser.Id)
             {
-                UserResult = result;
+                UserResult = result.Id;
             }
             else
             {
                 notyf.Error("The specified result could not be found.");
             }
         }
+
+        UserResults.Sort((x, y) => DateTime.Compare(x.ProjectionDate, y.ProjectionDate));
+        UserResults.Reverse();
+        UserResults = UserResults.Take(5).ToList();
+
+        Session.SetObject(HttpContext.Session, SessionVariables.Result, UserResult ?? Guid.Empty);
+        Session.SetObject(HttpContext.Session, SessionVariables.Results, UserResults);
     }
 
     public User CurrentUser { get; private set; } = Models.User.Default();
-    public Result? UserResult { get; private set; }
     public List<Result> UserResults { get; private set; } = [];
+    public Guid? UserResult { get; private set; }
 }

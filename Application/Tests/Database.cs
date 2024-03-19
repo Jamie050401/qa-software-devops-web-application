@@ -1,4 +1,6 @@
-﻿namespace Application.Tests;
+﻿using System.Diagnostics;
+
+namespace Application.Tests;
 
 using Common;
 using DatabaseLogic = Data.Database;
@@ -123,7 +125,8 @@ public class DatabaseCreate
             Id = Guid.NewGuid(),
             UserId = _userGuid,
             TotalInvestment = 0.0M,
-            ProjectedValue = 0.0M
+            ProjectedValue = 0.0M,
+            ProjectionDate = DateTime.UtcNow
         };
 
         var actual = _database.Create(result);
@@ -171,7 +174,8 @@ public class DatabaseUpdate
             Id = _resultGuid,
             UserId = _userGuid,
             TotalInvestment = 0.0M,
-            ProjectedValue = 0.0M
+            ProjectedValue = 0.0M,
+            ProjectionDate = DateTime.UtcNow
         });
     }
 
@@ -231,7 +235,8 @@ public class DatabaseUpdate
             Id = _resultGuid,
             UserId = _userGuid,
             ProjectedValue = 1000.0M,
-            TotalInvestment = 1000.0M
+            TotalInvestment = 1000.0M,
+            ProjectionDate = DateTime.UtcNow
         };
 
         var actual = _database.Update(result);
@@ -290,7 +295,8 @@ public class DatabaseRead
             Id = _resultGuid,
             UserId = _userGuid,
             TotalInvestment = 0.0M,
-            ProjectedValue = 0.0M
+            ProjectedValue = 0.0M,
+            ProjectionDate = _timestamp
         });
     }
 
@@ -349,13 +355,17 @@ public class DatabaseRead
     {
         var actual = _database.Read(Result.GetProperty("Id"), _resultGuid);
 
-        Assert.That(actual, Is.EqualTo(Response<IModel, Error>.OkValueResponse(new Result
-        {
-            Id = _resultGuid,
-            UserId = _userGuid,
-            TotalInvestment = 0.0M,
-            ProjectedValue = 0.0M
-        })));
+        Assert.That(actual.Status, Is.EqualTo(ResponseStatus.Success));
+
+        Debug.Assert(actual.Value != null, "actual.Value != null");
+        var value = (Result)actual.Value;
+
+        Assert.That(value.Id, Is.EqualTo(_resultGuid));
+        Assert.That(value.UserId, Is.EqualTo(_userGuid));
+        Assert.That(value.TotalInvestment, Is.EqualTo(0.0M));
+        Assert.That(value.ProjectedValue, Is.EqualTo(0.0M));
+        Assert.That(value.ProjectionDate.ToShortDateString(), Is.EqualTo(_timestamp.ToShortDateString()));
+        Assert.That(value.ProjectionDate.ToShortTimeString(), Is.EqualTo(_timestamp.ToShortTimeString()));
     }
 }
 
@@ -404,7 +414,8 @@ public class DatabaseDelete
             Id = _resultGuid,
             UserId = _userGuid,
             TotalInvestment = 0.0M,
-            ProjectedValue = 0.0M
+            ProjectedValue = 0.0M,
+            ProjectionDate = DateTime.UtcNow
         });
     }
 

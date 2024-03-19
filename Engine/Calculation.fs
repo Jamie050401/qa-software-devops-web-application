@@ -5,7 +5,7 @@ open Domain
 let Calculate (inputs : Inputs) =
     let negate originalValue currentValue =
         match originalValue < 0.0 with
-        | true -> currentValue * -1.0
+        | true  -> currentValue * -1.0
         | false -> currentValue
 
     let round (precision : int) number =
@@ -13,14 +13,13 @@ let Calculate (inputs : Inputs) =
         / 10.0 ** precision
         |> negate number
 
-    let funds = inputs.Funds |> List.ofSeq
-    let investmentPercentages = inputs.InvestmentPercentages |> List.ofSeq |> Dictionary
+    let funds = inputs.Funds |>  Array.ofSeq
+    let investmentPercentages = inputs.InvestmentPercentages |> Array.ofSeq |> Dictionary
 
     funds
-    |> List.map (fun fund ->
-        let investmentPercentage = investmentPercentages[fund.Id]
-        investmentPercentage * inputs.Investment * (1.0M + fund.GrowthRate) * (1.0M - fund.Charge))
-    |> List.sum
+    |> Array.Parallel.map (fun fund ->
+        investmentPercentages[fund.Id] * inputs.Investment * (1.0M + fund.GrowthRate) * (1.0M - fund.Charge))
+    |> Array.sum
     |> float
     |> round 2
     |> decimal
