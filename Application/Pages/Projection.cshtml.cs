@@ -19,7 +19,7 @@ public class Projection(INotyfService notyf) : PageModel
     {
         if (!Session.Authenticate(HttpContext.Session, Request, Response)) return;
 
-        CurrentUser = this.GetCurrentUser();
+        CurrentUser = Session.GetCurrentUser(HttpContext.Session);
         Form = this.GetForm();
 
         if (string.IsNullOrEmpty(Form.FirstName)) Form.FirstName = CurrentUser.FirstName ?? string.Empty;
@@ -32,7 +32,7 @@ public class Projection(INotyfService notyf) : PageModel
 
     public void OnPost()
     {
-        CurrentUser = this.GetCurrentUser();
+        CurrentUser = Session.GetCurrentUser(HttpContext.Session);
         Form = this.GetForm();
         this.GetFormData();
 
@@ -67,7 +67,7 @@ public class Projection(INotyfService notyf) : PageModel
 
     public void OnPostAddFund()
     {
-        CurrentUser = this.GetCurrentUser();
+        CurrentUser = Session.GetCurrentUser(HttpContext.Session);
         Form = this.GetForm();
         this.GetFormData();
 
@@ -84,7 +84,7 @@ public class Projection(INotyfService notyf) : PageModel
 
     public void OnPostDeleteFund()
     {
-        CurrentUser = this.GetCurrentUser();
+        CurrentUser = Session.GetCurrentUser(HttpContext.Session);
         Form = this.GetForm();
         this.GetFormData();
 
@@ -97,12 +97,6 @@ public class Projection(INotyfService notyf) : PageModel
         Session.SetObject(HttpContext.Session, SessionVariables.ProjectionFormData, Form);
 
         Response.Redirect("/projection");
-    }
-
-    private User GetCurrentUser()
-    {
-        return Session.GetObject<User>(HttpContext.Session, SessionVariables.CurrentUser)
-            ?? Models.User.Default();
     }
 
     private FormData GetForm()

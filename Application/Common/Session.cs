@@ -50,6 +50,12 @@ public static class Session
         SetString(session, key, json);
     }
 
+    public static User GetCurrentUser(ISession session)
+    {
+        return GetObject<User>(session, SessionVariables.CurrentUser)
+               ?? User.Default();
+    }
+
     public static bool Authenticate(ISession session, HttpRequest request, HttpResponse response)
     {
         if (!HasValue(session, SessionVariables.HasLoggedIn))

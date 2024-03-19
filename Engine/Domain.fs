@@ -18,10 +18,10 @@ type Inputs = {
 }
 
 [<Struct>]
-type Dictionary<'TKey, 'TValue when 'TKey : equality> (data : ('TKey * 'TValue) list) =
+type Dictionary<'TKey, 'TValue when 'TKey : equality> (data : ('TKey * 'TValue) seq) =
     member private this.Dict =
         let dict = System.Collections.Generic.Dictionary ()
-        data |> List.iter (fun (key, value) -> dict[key] <- value)
+        data |> Seq.iter (fun (key, value) -> dict[key] <- value)
         dict
 
     member this.Item
