@@ -42,9 +42,9 @@
 }
 
 <div class="container-fluid col-xxl-8 px-4 py-5">
-    <div class="row flex-lg-row-reverse align-items-left g-0 py-0 rounded-3 border shadow-lg">
-        @if (Model.UserResults.Count is not 0)
-        {
+    @if (Model.UserResults.Count is not 0)
+    {
+        <div class="row flex-lg-row-reverse align-items-left g-0 py-0 rounded-3 border shadow-lg">
             <div class="list-group">
                 <form method="POST" id="ResultForm">
                     <input type="hidden" id="DeleteResultId" name="DeleteResultId" value=""/>
@@ -54,8 +54,8 @@
                     }
                 </form>
             </div>
-        }
-    </div>
+        </div>
+    }
 </div>
 
 <script>
