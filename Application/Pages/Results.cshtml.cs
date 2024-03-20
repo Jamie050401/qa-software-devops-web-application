@@ -52,7 +52,8 @@ public class Results(INotyfService notyf) : PageModel
         if (dbResponse.Status is ResponseStatus.Success && dbResponse.HasValue)
         {
             Debug.Assert(dbResponse.Value != null, "dbResponse.Value != null");
-            UserResults = dbResponse.Value.Select(model => (Result)model).ToList();
+            var userResults = dbResponse.Value.Select(model => (Result)model);
+            UserResults = userResults.Where(result => result.UserId == CurrentUser.Id).ToList();
         }
 
         // ReSharper disable once InvertIf
@@ -60,13 +61,13 @@ public class Results(INotyfService notyf) : PageModel
         {
             var result = UserResults.Find(result => result.Id == id);
 
-            if (result?.UserId == CurrentUser.Id)
+            if (result is null)
             {
-                UserResult = result.Id;
+                notyf.Error("The specified result could not be found.");
             }
             else
             {
-                notyf.Error("The specified result could not be found.");
+                UserResult = result.Id;
             }
         }
 
