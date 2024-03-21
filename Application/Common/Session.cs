@@ -133,25 +133,24 @@ public static class Session
             logger.Information("Login failure: unable to retrieve authentication data from cookies");
             return false;
         }
-        Debug.Assert(cookieResponse.Value != null, "cookieResponse.Value != null");
-        var authenticationData = cookieResponse.Value;
 
-        var dbResponse = DatabaseManager.Database.Read(User.GetProperty("Email"), authenticationData.Email);
+        Debug.Assert(cookieResponse.Value != null, "cookieResponse.Value != null");
+        var dbResponse = DatabaseManager.Database.Read(User.GetProperty("Email"), cookieResponse.Value.Email);
         if (dbResponse.Status is ResponseStatus.Error || !dbResponse.HasValue)
         {
             logger.Information("Login failure: unable to find user matching authentication data stored in cookies");
             Cookie.Remove(response, Cookies.AuthenticationData);
             return false;
         }
+
         Debug.Assert(dbResponse.Value != null, "databaseResponse.Value != null");
         var userInDb = (User)dbResponse.Value;
-
         var isAuthenticated = userInDb.AuthenticationData is not null &&
-                              Secret.Verify(authenticationData.Token, userInDb.AuthenticationData.Token) &&
-                              authenticationData.Source == userInDb.AuthenticationData.Source &&
-                              authenticationData.Timestamp == userInDb.AuthenticationData.Timestamp &&
-                              authenticationData.Expires == userInDb.AuthenticationData.Expires &&
-                              DateTime.UtcNow < authenticationData.Expires.DateTime;
+                              Secret.Verify(cookieResponse.Value.Token, userInDb.AuthenticationData.Token) &&
+                              cookieResponse.Value.Source == userInDb.AuthenticationData.Source &&
+                              cookieResponse.Value.Timestamp == userInDb.AuthenticationData.Timestamp &&
+                              cookieResponse.Value.Expires == userInDb.AuthenticationData.Expires &&
+                              DateTime.UtcNow < cookieResponse.Value.Expires.DateTime;
 
         if (!isAuthenticated)
         {
