@@ -19,7 +19,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
         }
 
         if (Session.Redirect(HttpContext.Session, Request, Response)) return;
-        if (Session.TryCookieLogin(logger, HttpContext.Session, Request, Response)) return;
+        if (Session.TryCookieLogin(logger, HttpContext.Session, HttpContext.Connection, Request, Response)) return;
 
         Form = this.GetForm();
     }

@@ -125,7 +125,7 @@ public static class Session
 
     // TODO - Implement logic to regenerate the token everytime it is used?
     // TODO - Implement support for multiple cookies per user (i.e. 1 per device)
-    public static bool TryCookieLogin(ILogger logger, ISession session, HttpRequest request, HttpResponse response)
+    public static bool TryCookieLogin(ILogger logger, ISession session, ConnectionInfo connectionInfo, HttpRequest request, HttpResponse response)
     {
         var cookieResponse = Cookie.Retrieve<AuthenticationData>(request, Cookies.AuthenticationData);
         if (cookieResponse.Status is ResponseStatus.Error || !cookieResponse.HasValue)
@@ -147,7 +147,7 @@ public static class Session
         var userInDb = (User)dbResponse.Value;
         var isAuthenticated = userInDb.AuthenticationData is not null &&
                               Secret.Verify(cookieResponse.Value.Token, userInDb.AuthenticationData.Token) &&
-                              cookieResponse.Value.Source == userInDb.AuthenticationData.Source &&
+                              connectionInfo.RemoteIpAddress?.ToString() == userInDb.AuthenticationData.Source &&
                               cookieResponse.Value.Timestamp == userInDb.AuthenticationData.Timestamp &&
                               cookieResponse.Value.Expires == userInDb.AuthenticationData.Expires &&
                               DateTime.UtcNow < cookieResponse.Value.Expires.DateTime;

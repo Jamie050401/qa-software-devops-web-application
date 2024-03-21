@@ -14,7 +14,7 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
     public void OnGet()
     {
         if (Session.Redirect(HttpContext.Session, Request, Response)) return;
-        Session.TryCookieLogin(logger, HttpContext.Session, Request, Response);
+        Session.TryCookieLogin(logger, HttpContext.Session, HttpContext.Connection, Request, Response);
 
         Form = this.GetForm();
     }
