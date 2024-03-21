@@ -78,7 +78,7 @@ public class LoginModel(ILogger logger, INotyfService notyf) : PageModel
     {
         Form.Email = Request.Form["Email"].ToString();
         Form.Password = Request.Form["Password"].ToString();
-        Form.RememberMe = bool.TryParse(Request.Form["RememberMe"].ToString(), out var hasRememberMe) && hasRememberMe;
+        Form.RememberMe = Request.Form["RememberMe"].ToString() is "on";
     }
 
     public class FormData

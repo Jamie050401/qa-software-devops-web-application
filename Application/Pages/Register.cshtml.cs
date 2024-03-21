@@ -94,7 +94,7 @@ public class RegisterModel(ILogger logger, INotyfService notyf) : PageModel
         Form.LastName = Request.Form["LastName"].ToString();
         Form.PasswordFirst = Request.Form["PasswordFirst"].ToString();
         Form.PasswordSecond = Request.Form["PasswordSecond"].ToString();
-        Form.RememberMe = bool.TryParse(Request.Form["RememberMe"].ToString(), out var isRemembered) && isRemembered;
+        Form.RememberMe = Request.Form["RememberMe"].ToString() is "on";
     }
 
     public class FormData
