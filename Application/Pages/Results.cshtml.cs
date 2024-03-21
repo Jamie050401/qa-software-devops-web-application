@@ -19,7 +19,7 @@ public class Results(INotyfService notyf) : PageModel
             return;
 
         CurrentUser = Session.GetCurrentUser(HttpContext.Session);
-        this.GetUserResults(id);
+        this.GetUserResultsFromDatabase(id);
     }
 
     public IActionResult OnPost()
@@ -30,7 +30,7 @@ public class Results(INotyfService notyf) : PageModel
 
         var resultId = Guid.Parse(Request.Form["DeleteResultId"].ToString());
         DatabaseManager.Database.Delete(Result.GetProperty("Id"), resultId);
-        this.GetUserResults(null);
+        this.GetUserResultsFromDatabase(null);
 
         return this.RedirectToPage("/results");
     }
@@ -46,14 +46,16 @@ public class Results(INotyfService notyf) : PageModel
         return Session.GetObject<Guid?>(HttpContext.Session, SessionVariables.Result);
     }
 
-    private void GetUserResults(Guid? id)
+    private void GetUserResultsFromDatabase(Guid? id)
     {
         var dbResponse = DatabaseManager.Database.ReadAll<Result>();
         if (dbResponse.Status is ResponseStatus.Success && dbResponse.HasValue)
         {
             Debug.Assert(dbResponse.Value != null, "dbResponse.Value != null");
-            var userResults = dbResponse.Value.Select(model => (Result)model);
-            UserResults = userResults.Where(result => result.UserId == CurrentUser.Id).ToList();
+            UserResults = dbResponse.Value
+                .Select(model => (Result)model)
+                .Where(result => result.UserId == CurrentUser.Id)
+                .ToList();
         }
 
         // ReSharper disable once InvertIf
@@ -71,9 +73,10 @@ public class Results(INotyfService notyf) : PageModel
             }
         }
 
-        UserResults.Sort((x, y) => DateTime.Compare(x.ProjectionDate, y.ProjectionDate));
-        UserResults.Reverse();
-        UserResults = UserResults.Take(5).ToList();
+        UserResults.Sort((x, y) => DateTime.Compare(y.ProjectionDate, x.ProjectionDate));
+        UserResults = UserResults
+            .Take(5)
+            .ToList();
 
         Session.SetObject(HttpContext.Session, SessionVariables.Result, UserResult ?? Guid.Empty);
         Session.SetObject(HttpContext.Session, SessionVariables.Results, UserResults);
